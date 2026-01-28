@@ -26,12 +26,18 @@ type TokenInfo struct {
 
 // GetTokenBalance retrieves balance for a specific token and wallet
 func (c *Client) GetTokenBalance(ctx context.Context, wallet common.Address, token TokenInfo) (storage.TokenBalance, error) {
+	// Get healthy client with automatic failover
+	ethClient, _, err := c.failoverClient.GetClient()
+	if err != nil {
+		return storage.TokenBalance{}, fmt.Errorf("no RPC endpoint available: %w", err)
+	}
+
 	// Context with timeout
 	rpcCtx, cancel := context.WithTimeout(ctx, rpcTimeout)
 	defer cancel()
 
 	tokenAddr := common.HexToAddress(token.Address)
-	contract := bind.NewBoundContract(tokenAddr, c.parsedABI, c.client, c.client, c.client)
+	contract := bind.NewBoundContract(tokenAddr, c.parsedABI, ethClient, ethClient, ethClient)
 
 	result := storage.TokenBalance{
 		QueriedAt:    time.Now().UTC(),
@@ -41,7 +47,7 @@ func (c *Client) GetTokenBalance(ctx context.Context, wallet common.Address, tok
 
 	// Get balanceOf with retry
 	var balanceResult []any
-	err := retryWithBackoff(rpcCtx, func() error {
+	err = c.retryWithBackoff(rpcCtx, func() error {
 		return contract.Call(&bind.CallOpts{Context: rpcCtx}, &balanceResult, "balanceOf", wallet)
 	})
 	if err != nil {
@@ -52,7 +58,7 @@ func (c *Client) GetTokenBalance(ctx context.Context, wallet common.Address, tok
 	// Get decimals with retry (use fallback if fails)
 	result.Decimals = token.FallbackDecimals
 	var decimalsResult []any
-	err = retryWithBackoff(rpcCtx, func() error {
+	err = c.retryWithBackoff(rpcCtx, func() error {
 		return contract.Call(&bind.CallOpts{Context: rpcCtx}, &decimalsResult, "decimals")
 	})
 	if err == nil {
@@ -61,7 +67,7 @@ func (c *Client) GetTokenBalance(ctx context.Context, wallet common.Address, tok
 
 	// Get symbol with retry
 	var symbolResult []any
-	err = retryWithBackoff(rpcCtx, func() error {
+	err = c.retryWithBackoff(rpcCtx, func() error {
 		return contract.Call(&bind.CallOpts{Context: rpcCtx}, &symbolResult, "symbol")
 	})
 	if err != nil {
