@@ -32,6 +32,7 @@ func Load(configPath string) (*Config, error) {
 	// Map environment variables to config keys
 	// REALT_RMM_RPC_URL -> rpc_url
 	v.BindEnv("rpc_url", "RPC_URL")
+	v.BindEnv("rpc_urls", "RPC_URLS")
 	v.BindEnv("wallets", "WALLETS")
 	v.BindEnv("log_level", "LOG_LEVEL")
 	v.BindEnv("interval", "INTERVAL")
@@ -50,7 +51,7 @@ func Load(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	// Special handling for WALLETS env var (comma-separated)
+	// Special handling for comma-separated env vars
 	if walletsEnv := v.GetString("wallets"); walletsEnv != "" {
 		// Check if it's a comma-separated string (from env var)
 		if strings.Contains(walletsEnv, ",") {
@@ -62,7 +63,23 @@ func Load(configPath string) (*Config, error) {
 		}
 	}
 
-	// 6. Validate with validator
+	// Parse comma-separated RPC_URLS env var
+	if rpcURLsEnv := v.GetString("rpc_urls"); rpcURLsEnv != "" {
+		if strings.Contains(rpcURLsEnv, ",") {
+			urls := strings.Split(rpcURLsEnv, ",")
+			for i := range urls {
+				urls[i] = strings.TrimSpace(urls[i])
+			}
+			cfg.RPCUrls = urls
+		}
+	}
+
+	// 6. Normalize: convert single rpc_url to rpc_urls array
+	if err := cfg.Normalize(); err != nil {
+		return nil, fmt.Errorf("config normalization failed: %w", err)
+	}
+
+	// 7. Validate with validator
 	validate := NewValidator()
 	if err := validate.Struct(&cfg); err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
