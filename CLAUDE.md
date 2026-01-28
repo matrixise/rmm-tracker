@@ -68,7 +68,7 @@ fallback_decimals = 6
 # Optional
 interval = "5m"        # Enable daemon mode
 log_level = "info"     # debug, info, warn, error
-http_port = 8080       # Reserved for future use
+http_port = 8080       # Health check endpoint port (daemon mode only)
 ```
 
 ### Environment Variables (override config file)
@@ -106,10 +106,13 @@ realt-rmm/
 │   │   └── loader.go      # Viper-based multi-source loader
 │   ├── blockchain/
 │   │   ├── client.go      # Ethereum RPC client wrapper
-│   │   └── erc20.go       # ERC20 token operations
+│   │   ├── erc20.go       # ERC20 token operations
+│   │   └── failover.go    # RPC failover client
 │   ├── storage/
 │   │   ├── postgres.go    # pgx pool and operations
 │   │   └── models.go      # Data models
+│   ├── health/
+│   │   └── health.go      # Health check endpoint (daemon mode)
 │   └── logger/
 │       └── logger.go      # Structured logging setup
 └── go.mod
@@ -137,6 +140,65 @@ realt-rmm/
 - **Daemon mode**: Optional interval-based execution
 
 The application iterates over configured wallets, queries tokens in parallel using goroutines, then batch-inserts results per wallet using transactions.
+
+### Health Check Endpoint
+
+In daemon mode, the application exposes an HTTP health check endpoint for monitoring:
+
+**Endpoint:** `GET /health`
+
+**Port:** Configurable via `http_port` in config (default: 8080)
+
+**Response Format:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-01-28T22:30:00Z",
+  "checks": {
+    "database": {
+      "status": "ok",
+      "message": "database connection healthy"
+    },
+    "rpc_endpoints": {
+      "status": "ok",
+      "message": "all RPC endpoints healthy"
+    },
+    "daemon": {
+      "status": "ok",
+      "message": "last executed 45s ago"
+    }
+  },
+  "uptime": "2h15m30s"
+}
+```
+
+**Status Codes:**
+- `200 OK`: All checks passed (status: "healthy")
+- `503 Service Unavailable`: One or more critical checks failed (status: "unhealthy")
+
+**Check Types:**
+1. **Database**: Verifies PostgreSQL connection with ping (2s timeout)
+2. **RPC Endpoints**: Checks at least one RPC endpoint is responding (3s timeout)
+   - Status "ok": All endpoints healthy
+   - Status "degraded": Some endpoints unhealthy but at least one working
+   - Status "error": No healthy endpoints available
+3. **Daemon** (daemon mode only): Verifies executions are running on schedule
+   - Allows 2× interval grace period before marking degraded
+   - Tracks last execution success/failure
+
+**Docker Compose Integration:**
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 15s
+```
+
+The `-f` flag makes curl return a non-zero exit code on HTTP errors (4xx, 5xx), which Docker uses to mark the container as unhealthy.
+
+**Note:** Health endpoint is only available in daemon mode (when `interval` is set). One-shot execution does not start the HTTP server.
 
 ### RPC Endpoint Failover
 

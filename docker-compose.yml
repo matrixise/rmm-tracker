@@ -26,8 +26,18 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://realt:realt@postgres:5432/realt_rmm?sslmode=disable
+      REALT_RMM_INTERVAL: 5m  # Enable daemon mode
     volumes:
       - ./config.toml:/app/config.toml:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
 
 volumes:
   postgres_data:

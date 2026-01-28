@@ -183,3 +183,18 @@ func (fc *FailoverClient) Close() {
 		ep.mu.Unlock()
 	}
 }
+
+// GetEndpointsHealth returns the health status of all endpoints
+func (fc *FailoverClient) GetEndpointsHealth() map[string]bool {
+	fc.mu.RLock()
+	defer fc.mu.RUnlock()
+
+	health := make(map[string]bool, len(fc.endpoints))
+	for _, ep := range fc.endpoints {
+		ep.mu.RLock()
+		health[ep.url] = ep.healthy
+		ep.mu.RUnlock()
+	}
+
+	return health
+}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 const (
@@ -43,6 +44,16 @@ func NewClient(rpcURLs []string) (*Client, error) {
 // Close closes all RPC client connections
 func (c *Client) Close() {
 	c.failoverClient.Close()
+}
+
+// GetHealthyEndpoint returns a healthy RPC client and its URL
+func (c *Client) GetHealthyEndpoint() (*ethclient.Client, string, error) {
+	return c.failoverClient.GetClient()
+}
+
+// GetEndpointsHealth returns the health status of all RPC endpoints
+func (c *Client) GetEndpointsHealth() map[string]bool {
+	return c.failoverClient.GetEndpointsHealth()
 }
 
 // retryWithBackoff executes a function with exponential backoff and automatic failover

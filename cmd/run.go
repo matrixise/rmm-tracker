@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -12,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/matrixise/realt-rmm/internal/blockchain"
 	"github.com/matrixise/realt-rmm/internal/config"
+	"github.com/matrixise/realt-rmm/internal/health"
 	"github.com/matrixise/realt-rmm/internal/logger"
 	"github.com/matrixise/realt-rmm/internal/storage"
 	"github.com/spf13/cobra"
@@ -122,6 +125,36 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Start health check server (daemon mode only)
+	httpPort := cfg.HTTPPort
+	if httpPort == 0 {
+		httpPort = 8080 // Default port
+	}
+
+	healthChecker := health.NewChecker(store, client, duration)
+
+	// Start HTTP server in background
+	httpServer := &http.Server{
+		Addr:    fmt.Sprintf(":%d", httpPort),
+		Handler: http.HandlerFunc(healthChecker.Handler()),
+	}
+
+	go func() {
+		slog.Info("Health check server starting", "port", httpPort, "endpoint", "/health")
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Health server error", "error", err)
+		}
+	}()
+
+	// Ensure HTTP server shutdown on exit
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		if err := httpServer.Shutdown(shutdownCtx); err != nil {
+			slog.Error("Health server shutdown error", "error", err)
+		}
+	}()
+
 	ticker := time.NewTicker(duration)
 	defer ticker.Stop()
 
@@ -130,6 +163,9 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	// First run immediately
 	if err := processAllWallets(ctx, cfg, client, store); err != nil {
 		slog.Error("First execution error", "error", err)
+		healthChecker.UpdateLastRun(false)
+	} else {
+		healthChecker.UpdateLastRun(true)
 	}
 
 	// Then run on interval
@@ -141,6 +177,9 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		case <-ticker.C:
 			if err := processAllWallets(ctx, cfg, client, store); err != nil {
 				slog.Error("Periodic execution error", "error", err)
+				healthChecker.UpdateLastRun(false)
+			} else {
+				healthChecker.UpdateLastRun(true)
 			}
 		}
 	}
