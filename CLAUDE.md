@@ -48,8 +48,16 @@ The application uses multi-format configuration via viper (TOML, YAML, JSON):
 ### Config File Fields
 
 ```toml
-# Required
-rpc_url = "https://rpc.gnosischain.com"
+# Required: RPC endpoints (use multiple for high availability)
+rpc_urls = [
+    "https://rpc.gnosischain.com",
+    "https://gnosis.drpc.org",
+    "https://rpc.ankr.com/gnosis"
+]
+
+# Or single endpoint (legacy, still supported)
+# rpc_url = "https://rpc.gnosischain.com"
+
 wallets = ["0x..."]
 
 [[tokens]]
@@ -66,14 +74,15 @@ http_port = 8080       # Reserved for future use
 ### Environment Variables (override config file)
 
 **Recommended format with REALT_RMM_ prefix:**
-- `REALT_RMM_RPC_URL`: Override RPC endpoint
+- `REALT_RMM_RPC_URLS`: Comma-separated RPC endpoints (recommended)
+- `REALT_RMM_RPC_URL`: Single RPC endpoint (legacy)
 - `REALT_RMM_WALLETS`: Comma-separated wallet addresses
 - `REALT_RMM_LOG_LEVEL`: Log level (debug, info, warn, error)
 - `REALT_RMM_INTERVAL`: Daemon interval (e.g., "5m", "1h")
 - `DATABASE_URL` (required): PostgreSQL connection string
 
 **Legacy format (still supported):**
-- `RPC_URL`, `WALLETS`, `LOG_LEVEL` (no prefix)
+- `RPC_URL`, `RPC_URLS`, `WALLETS`, `LOG_LEVEL` (no prefix)
 
 See `.env.example` for a template.
 
@@ -120,6 +129,7 @@ realt-rmm/
 - **Declarative validation**: Config structs with validation tags
 - **Connection pooling**: pgxpool with configurable min/max connections
 - **Parallelization**: Goroutines + channels for concurrent token queries per wallet
+- **RPC Failover**: Automatic failover between multiple RPC endpoints with health tracking
 - **Resilience**: Exponential backoff retry (3 attempts, 10s timeout)
 - **Batch operations**: pgx.Batch API for efficient bulk inserts
 - **Structured logging**: JSON logs with contextual metadata
@@ -127,6 +137,29 @@ realt-rmm/
 - **Daemon mode**: Optional interval-based execution
 
 The application iterates over configured wallets, queries tokens in parallel using goroutines, then batch-inserts results per wallet using transactions.
+
+### RPC Endpoint Failover
+
+The application supports multiple RPC endpoints for high availability:
+
+**Configuration:**
+```toml
+rpc_urls = [
+    "https://rpc.gnosischain.com",    # Primary
+    "https://gnosis.drpc.org",        # Backup 1
+    "https://rpc.ankr.com/gnosis"     # Backup 2
+]
+```
+
+**Behavior:**
+- Automatically fails over to backup endpoints if primary fails
+- Unhealthy endpoints are retried after 5-minute cooldown
+- Transparent to the application logic - retries include failover attempts
+- Logs all failover events for monitoring
+- At least one healthy endpoint required at startup
+
+**Backward Compatibility:**
+Single `rpc_url` is still supported for simple deployments and automatically converted to `rpc_urls` array internally.
 
 ## CLI Commands
 

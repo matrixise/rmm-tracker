@@ -8,6 +8,7 @@ A Go application that monitors ERC-20 token balances on Gnosis Chain and persist
 - 🔄 **Daemon Mode**: Optional continuous monitoring with configurable intervals
 - ⚡ **High Performance**: pgx/v5 database driver (30-50% faster than lib/pq)
 - 🔁 **Parallel Processing**: Concurrent token queries using goroutines
+- 🔀 **RPC Failover**: Automatic failover between multiple RPC endpoints for high availability
 - 🛡️ **Resilient**: Exponential backoff retry logic for transient failures
 - 📦 **Batch Operations**: Efficient bulk inserts with transactions
 - 📊 **Structured Logging**: JSON logs ready for ELK, Loki, or other aggregators
@@ -42,7 +43,16 @@ docker compose build
 Create `config.toml`:
 
 ```toml
-rpc_url = "https://rpc.gnosischain.com"
+# Multiple RPC endpoints for high availability (recommended)
+rpc_urls = [
+    "https://rpc.gnosischain.com",
+    "https://gnosis.drpc.org",
+    "https://rpc.ankr.com/gnosis"
+]
+
+# Or single endpoint (simpler, less resilient)
+# rpc_url = "https://rpc.gnosischain.com"
+
 wallets = [
     "0x1234567890123456789012345678901234567890",
     "0x2345678901234567890123456789012345678901"
