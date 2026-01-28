@@ -93,14 +93,21 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Connect to blockchain
-	client, err := blockchain.NewClient(cfg.RPCUrl)
+	// Connect to blockchain with failover support
+	client, err := blockchain.NewClient(cfg.RPCUrls)
 	if err != nil {
-		slog.Error("Failed to connect to RPC", "rpc_url", cfg.RPCUrl, "error", err)
+		slog.Error("Failed to connect to RPC", "error", err)
 		return err
 	}
 	defer client.Close()
-	slog.Info("RPC connection established", "rpc_url", cfg.RPCUrl)
+
+	if len(cfg.RPCUrls) == 1 {
+		slog.Info("RPC connection established", "endpoint", cfg.RPCUrls[0])
+	} else {
+		slog.Info("RPC connection established with failover",
+			"endpoints", len(cfg.RPCUrls),
+			"primary", cfg.RPCUrls[0])
+	}
 
 	// Run mode: one-time or daemon
 	if runInterval == "" || once {
