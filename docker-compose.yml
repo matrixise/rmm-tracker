@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: realt-rmm-postgres
+    environment:
+      POSTGRES_USER: realt
+      POSTGRES_PASSWORD: realt
+      POSTGRES_DB: realt_rmm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U realt -d realt_rmm"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: realt-rmm-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://realt:realt@postgres:5432/realt_rmm?sslmode=disable
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+
+volumes:
+  postgres_data:

@@ -1,0 +1,36 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck      # Vérifie les erreurs non traitées
+    - gosimple      # Simplifie le code
+    - govet         # Examine le code
+    - ineffassign   # Détecte les assignations inutiles
+    - staticcheck   # Analyse statique avancée
+    - unused        # Détecte le code non utilisé
+    - gofmt         # Vérifie le formatage
+    - misspell      # Détecte les fautes d'orthographe
+    - revive        # Remplaçant rapide de golint
+    - gosec         # Vérifie les problèmes de sécurité
+    - unconvert     # Détecte les conversions inutiles
+
+linters-settings:
+  errcheck:
+    check-blank: true
+    check-type-assertions: false
+
+  revive:
+    rules:
+      - name: exported
+        disabled: true  # Pas besoin de commenter tous les exports
+
+  gosec:
+    excludes:
+      - G404  # Utilisation de math/rand au lieu de crypto/rand (acceptable pour non-crypto)
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
