@@ -1,6 +1,6 @@
 # Améliorations Implémentées
 
-Ce document résume les améliorations apportées au projet RealT RMM.
+Ce document résume les améliorations apportées au projet rmm-tracker.
 
 ## ✅ Point 6 - Structured Logging avec slog
 
@@ -40,7 +40,7 @@ LOG_LEVEL=debug docker compose up app
 
 ### Exemple d'erreur
 ```bash
-$ WALLETS=0xinvalid ./realt-rmm
+$ WALLETS=0xinvalid ./rmm-tracker
 {"time":"...","level":"ERROR","msg":"Erreur de configuration","error":"adresse wallet invalide à l'index 0: 0xinvalid"}
 ```
 
@@ -100,13 +100,13 @@ cp .env.example .env
 ### Exemples
 ```bash
 # Override du RPC
-RPC_URL="https://custom-rpc.example.com" ./realt-rmm
+RPC_URL="https://custom-rpc.example.com" ./rmm-tracker
 
 # Override des wallets
-WALLETS="0xAddr1,0xAddr2" ./realt-rmm
+WALLETS="0xAddr1,0xAddr2" ./rmm-tracker
 
 # Tous les overrides
-RPC_URL="..." WALLETS="..." LOG_LEVEL=debug ./realt-rmm
+RPC_URL="..." WALLETS="..." LOG_LEVEL=debug ./rmm-tracker
 ```
 
 ---
@@ -135,7 +135,7 @@ docker compose build app
 
 #### Build avec linting (CI/production)
 ```bash
-docker build --build-arg ENABLE_LINT=true -t realt-rmm-app .
+docker build --build-arg ENABLE_LINT=true -t rmm-tracker-app .
 ```
 
 #### Linting en local
@@ -189,7 +189,7 @@ WALLETS="0xinvalid" docker compose up app
 ### Test linting
 ```bash
 # Build avec linting activé
-docker build --build-arg ENABLE_LINT=true -t realt-rmm-app .
+docker build --build-arg ENABLE_LINT=true -t rmm-tracker-app .
 ```
 
 ---

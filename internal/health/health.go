@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/matrixise/realt-rmm/internal/blockchain"
-	"github.com/matrixise/realt-rmm/internal/storage"
+	"github.com/matrixise/rmm-tracker/internal/blockchain"
+	"github.com/matrixise/rmm-tracker/internal/storage"
 )
 
 // SchedulerInterface defines methods for querying scheduler state

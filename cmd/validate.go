@@ -3,8 +3,8 @@ package cmd
 import (
 	"log/slog"
 
-	"github.com/matrixise/realt-rmm/internal/config"
-	"github.com/matrixise/realt-rmm/internal/logger"
+	"github.com/matrixise/rmm-tracker/internal/config"
+	"github.com/matrixise/rmm-tracker/internal/logger"
 	"github.com/spf13/cobra"
 )
 

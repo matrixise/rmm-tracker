@@ -1,6 +1,6 @@
 # Migration Guide
 
-This guide helps users migrate between versions of realt-rmm.
+This guide helps users migrate between versions of rmm-tracker.
 
 ## v2 to v3: Clock-Aligned Scheduling
 
@@ -58,7 +58,7 @@ timezone = "America/New_York"  # Eastern Time
 
 Or via environment variable:
 ```bash
-REALT_RMM_TIMEZONE=America/New_York
+RMM_TRACKER_TIMEZONE=America/New_York
 ```
 
 **3. Run Immediately Option:**
@@ -69,7 +69,7 @@ run_immediately = false  # Skip first execution, wait for schedule
 
 Or via environment variable:
 ```bash
-REALT_RMM_RUN_IMMEDIATELY=false
+RMM_TRACKER_RUN_IMMEDIATELY=false
 ```
 
 ### Migration Steps
@@ -80,7 +80,7 @@ Review your current `interval` configuration:
 
 ```bash
 # Check if your interval is valid for v3
-DATABASE_URL="..." ./realt-rmm validate-config
+DATABASE_URL="..." ./rmm-tracker validate-config
 ```
 
 **Step 2: Update Invalid Intervals**
@@ -117,7 +117,7 @@ timezone = "America/New_York"  # Eastern Time
 Run in daemon mode and verify clock alignment:
 
 ```bash
-DATABASE_URL="..." ./realt-rmm run --interval 5m --log-level debug
+DATABASE_URL="..." ./rmm-tracker run --interval 5m --log-level debug
 ```
 
 Check logs for:
@@ -131,7 +131,7 @@ Check logs for:
 **✅ No Changes Required:**
 - Standard intervals: `5m`, `10m`, `15m`, `30m`, `1h`, `2h`, `6h`, `12h`
 - All existing config files with standard intervals work without modification
-- Environment variables unchanged (same `REALT_RMM_*` prefix)
+- Environment variables unchanged (same `RMM_TRACKER_*` prefix)
 
 **⚠️ May Require Changes:**
 - Non-standard intervals: `7m`, `13m`, `45m`, `5h`, `7h`, etc.
@@ -158,33 +158,33 @@ This guide helps users migrate from the original monolithic version to the new m
 **Before (v1):**
 ```bash
 # Run with default config.toml
-DATABASE_URL="..." ./realt-rmm
+DATABASE_URL="..." ./rmm-tracker
 
 # Run with custom config
-DATABASE_URL="..." ./realt-rmm /path/to/config.toml
+DATABASE_URL="..." ./rmm-tracker /path/to/config.toml
 ```
 
 **After (v2):**
 ```bash
 # Run once with default config
-DATABASE_URL="..." ./realt-rmm run
+DATABASE_URL="..." ./rmm-tracker run
 
 # Run with custom config
-DATABASE_URL="..." ./realt-rmm run --config /path/to/config.toml
+DATABASE_URL="..." ./rmm-tracker run --config /path/to/config.toml
 
 # Run in daemon mode
-DATABASE_URL="..." ./realt-rmm run --interval 5m
+DATABASE_URL="..." ./rmm-tracker run --interval 5m
 
 # Validate config
-DATABASE_URL="..." ./realt-rmm validate-config
+DATABASE_URL="..." ./rmm-tracker validate-config
 
 # Check version
-./realt-rmm version
+./rmm-tracker version
 ```
 
 ### Environment Variables
 
-Environment variables now support a consistent `REALT_RMM_` prefix:
+Environment variables now support a consistent `RMM_TRACKER_` prefix:
 
 **Before (v1):**
 ```bash
@@ -196,10 +196,10 @@ export DATABASE_URL="postgres://..."
 
 **After (v2):**
 ```bash
-# Both formats work, but REALT_RMM_ prefix is recommended
-export REALT_RMM_RPC_URL="https://rpc.gnosischain.com"
-export REALT_RMM_WALLETS="0xAddr1,0xAddr2"
-export REALT_RMM_LOG_LEVEL="debug"
+# Both formats work, but RMM_TRACKER_ prefix is recommended
+export RMM_TRACKER_RPC_URL="https://rpc.gnosischain.com"
+export RMM_TRACKER_WALLETS="0xAddr1,0xAddr2"
+export RMM_TRACKER_LOG_LEVEL="debug"
 export DATABASE_URL="postgres://..."  # Still supported
 
 # Legacy format still works for compatibility
@@ -215,7 +215,7 @@ export LOG_LEVEL="debug"
 The application now uses cobra for a modern CLI experience:
 
 ```bash
-realt-rmm
+rmm-tracker
 ├── run              # Run the tracker (once or daemon)
 ├── validate-config  # Validate configuration without running
 └── version         # Display version information
@@ -230,10 +230,10 @@ Run continuously with automatic execution at intervals:
 interval = "5m"
 
 # Or via environment variable
-REALT_RMM_INTERVAL=5m ./realt-rmm run
+RMM_TRACKER_INTERVAL=5m ./rmm-tracker run
 
 # Or via flag
-./realt-rmm run --interval 5m
+./rmm-tracker run --interval 5m
 ```
 
 ### 3. Configuration Validation
@@ -241,7 +241,7 @@ REALT_RMM_INTERVAL=5m ./realt-rmm run
 Validate your configuration before running:
 
 ```bash
-DATABASE_URL="..." ./realt-rmm validate-config --config config.toml
+DATABASE_URL="..." ./rmm-tracker validate-config --config config.toml
 ```
 
 ### 4. Multi-Format Configuration
@@ -250,13 +250,13 @@ Configuration now supports multiple formats via viper:
 
 ```bash
 # TOML (default)
-./realt-rmm run --config config.toml
+./rmm-tracker run --config config.toml
 
 # YAML
-./realt-rmm run --config config.yaml
+./rmm-tracker run --config config.yaml
 
 # JSON
-./realt-rmm run --config config.json
+./rmm-tracker run --config config.json
 ```
 
 ### 5. Enhanced Logging
@@ -264,7 +264,7 @@ Configuration now supports multiple formats via viper:
 Log level can be set multiple ways (in order of precedence):
 
 1. Command-line flag: `--log-level debug`
-2. Environment variable: `REALT_RMM_LOG_LEVEL=debug`
+2. Environment variable: `RMM_TRACKER_LOG_LEVEL=debug`
 3. Config file: `log_level = "debug"`
 4. Default: `info`
 
@@ -306,7 +306,7 @@ http_port = 8080       # Reserved for future HTTP API
 ```yaml
 services:
   app:
-    command: ["./realt-rmm", "config.toml"]
+    command: ["./rmm-tracker", "config.toml"]
 ```
 
 **After (v2):**
@@ -314,14 +314,14 @@ services:
 services:
   app:
     # Default command is "run"
-    command: ["./realt-rmm", "run"]
+    command: ["./rmm-tracker", "run"]
 
     # Or daemon mode
-    command: ["./realt-rmm", "run", "--interval", "5m"]
+    command: ["./rmm-tracker", "run", "--interval", "5m"]
 
     # Environment variables
     environment:
-      - REALT_RMM_INTERVAL=5m
+      - RMM_TRACKER_INTERVAL=5m
 ```
 
 ### Dockerfile
@@ -329,7 +329,7 @@ services:
 The Dockerfile has been updated to use the new command structure:
 
 ```dockerfile
-ENTRYPOINT ["./realt-rmm", "run"]
+ENTRYPOINT ["./rmm-tracker", "run"]
 ```
 
 ## Backward Compatibility
@@ -340,19 +340,19 @@ The application will detect if you're using the old command format and suggest m
 
 ```bash
 # Old format (still works but deprecated)
-DATABASE_URL="..." ./realt-rmm config.toml
+DATABASE_URL="..." ./rmm-tracker config.toml
 
 # New format
-DATABASE_URL="..." ./realt-rmm run --config config.toml
+DATABASE_URL="..." ./rmm-tracker run --config config.toml
 ```
 
 ### Environment Variables
 
 Both old and new environment variable formats are supported:
 
-- `RPC_URL` → `REALT_RMM_RPC_URL`
-- `WALLETS` → `REALT_RMM_WALLETS`
-- `LOG_LEVEL` → `REALT_RMM_LOG_LEVEL`
+- `RPC_URL` → `RMM_TRACKER_RPC_URL`
+- `WALLETS` → `RMM_TRACKER_WALLETS`
+- `LOG_LEVEL` → `RMM_TRACKER_LOG_LEVEL`
 
 The prefixed versions take precedence if both are set.
 
@@ -367,18 +367,18 @@ If you need to rollback to v1:
 
 2. Rebuild:
    ```bash
-   go build -o realt-rmm .
+   go build -o rmm-tracker .
    ```
 
 3. Use the old command format:
    ```bash
-   DATABASE_URL="..." ./realt-rmm config.toml
+   DATABASE_URL="..." ./rmm-tracker config.toml
    ```
 
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/matrixise/realt-rmm/issues
+- GitHub Issues: https://github.com/matrixise/rmm-tracker/issues
 - Review CLAUDE.md for detailed architecture documentation
 - Check README.md for usage examples
 
@@ -406,10 +406,10 @@ The validator library provides:
 
 After migration, verify:
 
-- [ ] `realt-rmm version` displays version info
-- [ ] `realt-rmm validate-config` validates your config
-- [ ] `realt-rmm run` executes once successfully
-- [ ] `realt-rmm run --interval 5s` runs in daemon mode
+- [ ] `rmm-tracker version` displays version info
+- [ ] `rmm-tracker validate-config` validates your config
+- [ ] `rmm-tracker run` executes once successfully
+- [ ] `rmm-tracker run --interval 5s` runs in daemon mode
 - [ ] Environment variables override config values
 - [ ] Graceful shutdown works (Ctrl+C)
 - [ ] Database records are inserted correctly

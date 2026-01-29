@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 RealT RMM - Déploiement rapide"
+echo "🚀 RMM Tracker - Déploiement rapide"
 echo
 
 # Check if Docker is installed
@@ -23,8 +23,8 @@ if [ ! -f .env ]; then
     echo
     echo "⚠️  IMPORTANT: Éditez le fichier .env avec vos paramètres:"
     echo "   - DATABASE_URL (obligatoire)"
-    echo "   - REALT_RMM_RPC_URLS (recommandé)"
-    echo "   - REALT_RMM_WALLETS"
+    echo "   - RMM_TRACKER_RPC_URLS (recommandé)"
+    echo "   - RMM_TRACKER_WALLETS"
     echo
     echo "Puis relancez: ./deploy.sh"
     exit 0

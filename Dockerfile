@@ -32,8 +32,8 @@ ARG BUILD_TIME=unknown
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags "-X github.com/matrixise/realt-rmm/cmd.Version=${VERSION} -X github.com/matrixise/realt-rmm/cmd.GitCommit=${GIT_COMMIT} -X github.com/matrixise/realt-rmm/cmd.BuildTime=${BUILD_TIME}" \
-    -o realt-rmm .
+    -ldflags "-X github.com/matrixise/rmm-tracker/cmd.Version=${VERSION} -X github.com/matrixise/rmm-tracker/cmd.GitCommit=${GIT_COMMIT} -X github.com/matrixise/rmm-tracker/cmd.BuildTime=${BUILD_TIME}" \
+    -o rmm-tracker .
 
 FROM alpine:latest
 
@@ -41,7 +41,7 @@ RUN apk --no-cache add ca-certificates curl
 
 WORKDIR /app
 
-COPY --from=builder /app/realt-rmm .
+COPY --from=builder /app/rmm-tracker .
 COPY config.toml .
 
-ENTRYPOINT ["./realt-rmm", "run"]
+ENTRYPOINT ["./rmm-tracker", "run"]

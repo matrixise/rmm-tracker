@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-playground/validator/v10"
-	"github.com/matrixise/realt-rmm/internal/scheduler"
+	"github.com/matrixise/rmm-tracker/internal/scheduler"
 )
 
 // Config represents the application configuration

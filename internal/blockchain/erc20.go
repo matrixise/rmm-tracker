@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/matrixise/realt-rmm/internal/storage"
+	"github.com/matrixise/rmm-tracker/internal/storage"
 )
 
 const erc20ABI = `[

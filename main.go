@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/matrixise/realt-rmm/cmd"
+	"github.com/matrixise/rmm-tracker/cmd"
 )
 
 func main() {

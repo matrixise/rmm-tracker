@@ -12,12 +12,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/matrixise/realt-rmm/internal/blockchain"
-	"github.com/matrixise/realt-rmm/internal/config"
-	"github.com/matrixise/realt-rmm/internal/health"
-	"github.com/matrixise/realt-rmm/internal/logger"
-	"github.com/matrixise/realt-rmm/internal/scheduler"
-	"github.com/matrixise/realt-rmm/internal/storage"
+	"github.com/matrixise/rmm-tracker/internal/blockchain"
+	"github.com/matrixise/rmm-tracker/internal/config"
+	"github.com/matrixise/rmm-tracker/internal/health"
+	"github.com/matrixise/rmm-tracker/internal/logger"
+	"github.com/matrixise/rmm-tracker/internal/scheduler"
+	"github.com/matrixise/rmm-tracker/internal/storage"
 	"github.com/spf13/cobra"
 )
 

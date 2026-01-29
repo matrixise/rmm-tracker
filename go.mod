@@ -1,4 +1,4 @@
-module github.com/matrixise/realt-rmm
+module github.com/matrixise/rmm-tracker
 
 go 1.25.6
 

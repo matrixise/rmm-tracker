@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:18
-    container_name: realt-rmm-postgres
+    container_name: rmm-tracker-postgres
     environment:
       POSTGRES_USER: realt
       POSTGRES_PASSWORD: realt
@@ -20,13 +20,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: realt-rmm-app
+    container_name: rmm-tracker-app
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://realt:realt@postgres:5432/realt_rmm?sslmode=disable
-      REALT_RMM_INTERVAL: 5m  # Enable daemon mode
+      RMM_TRACKER_INTERVAL: 5m  # Enable daemon mode
     volumes:
       - ./config.toml:/app/config.toml:ro
     ports:

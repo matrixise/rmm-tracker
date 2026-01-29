@@ -6,7 +6,7 @@ echo
 
 # Test 1: Valid duration
 echo "Test 1: Valid 5m duration"
-DATABASE_URL="postgres://user:pass@localhost:5432/test" ./realt-rmm validate-config --config config.toml
+DATABASE_URL="postgres://user:pass@localhost:5432/test" ./rmm-tracker validate-config --config config.toml
 echo "✅ PASS"
 echo
 
@@ -14,7 +14,7 @@ echo
 echo "Test 2: Invalid 7m duration (should fail)"
 echo 'interval = "7m"' > /tmp/test-invalid.toml
 cat config.toml | grep -v '^interval' | grep -v '^#' | grep -v 'run_immediately' | grep -v 'timezone' >> /tmp/test-invalid.toml
-if DATABASE_URL="postgres://user:pass@localhost:5432/test" ./realt-rmm validate-config --config /tmp/test-invalid.toml 2>&1 | grep -q "failed on the 'schedule' tag"; then
+if DATABASE_URL="postgres://user:pass@localhost:5432/test" ./rmm-tracker validate-config --config /tmp/test-invalid.toml 2>&1 | grep -q "failed on the 'schedule' tag"; then
     echo "✅ PASS - Correctly rejected invalid interval"
 else
     echo "❌ FAIL - Should have rejected 7m interval"
@@ -26,7 +26,7 @@ echo
 echo "Test 3: Cron expression validation"
 echo 'interval = "*/5 * * * *"' > /tmp/test-cron.toml
 cat config.toml | grep -v '^interval' | grep -v '^#' | grep -v 'run_immediately' | grep -v 'timezone' >> /tmp/test-cron.toml
-DATABASE_URL="postgres://user:pass@localhost:5432/test" ./realt-rmm validate-config --config /tmp/test-cron.toml
+DATABASE_URL="postgres://user:pass@localhost:5432/test" ./rmm-tracker validate-config --config /tmp/test-cron.toml
 echo "✅ PASS"
 echo
 
@@ -34,7 +34,7 @@ echo
 echo "Test 4: Complex cron expression (9am and 5pm on weekdays)"
 echo 'interval = "0 9,17 * * 1-5"' > /tmp/test-complex-cron.toml
 cat config.toml | grep -v '^interval' | grep -v '^#' | grep -v 'run_immediately' | grep -v 'timezone' >> /tmp/test-complex-cron.toml
-DATABASE_URL="postgres://user:pass@localhost:5432/test" ./realt-rmm validate-config --config /tmp/test-complex-cron.toml
+DATABASE_URL="postgres://user:pass@localhost:5432/test" ./rmm-tracker validate-config --config /tmp/test-complex-cron.toml
 echo "✅ PASS"
 echo
 
@@ -51,7 +51,7 @@ label = "test"
 address = "0x0cA4f5554Dd9Da6217d62D8df2816c82bba4157b"
 fallback_decimals = 18
 EOF
-DATABASE_URL="postgres://user:pass@localhost:5432/test" ./realt-rmm validate-config --config /tmp/test-timezone.toml
+DATABASE_URL="postgres://user:pass@localhost:5432/test" ./rmm-tracker validate-config --config /tmp/test-timezone.toml
 echo "✅ PASS"
 echo
 
@@ -68,7 +68,7 @@ label = "test"
 address = "0x0cA4f5554Dd9Da6217d62D8df2816c82bba4157b"
 fallback_decimals = 18
 EOF
-if DATABASE_URL="postgres://user:pass@localhost:5432/test" ./realt-rmm validate-config --config /tmp/test-invalid-tz.toml 2>&1 | grep -q "failed on the 'timezone' tag"; then
+if DATABASE_URL="postgres://user:pass@localhost:5432/test" ./rmm-tracker validate-config --config /tmp/test-invalid-tz.toml 2>&1 | grep -q "failed on the 'timezone' tag"; then
     echo "✅ PASS - Correctly rejected invalid timezone"
 else
     echo "❌ FAIL - Should have rejected invalid timezone"

@@ -2,7 +2,7 @@
 .env
 
 # Build artifacts
-realt-rmm
+rmm-tracker
 *.exe
 *.dll
 *.so

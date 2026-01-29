@@ -4,32 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RealT RMM is a Go application that queries ERC-20 token balances on Gnosis Chain and persists results to PostgreSQL. It monitors RealT RMM (Real Money Market) tokens including armmXDAI, armmUSDC, and their debt variants.
+rmm-tracker is a Go application that queries ERC-20 token balances on Gnosis Chain and persists results to PostgreSQL. It monitors RealT RMM (Real Money Market) tokens including armmXDAI, armmUSDC, and their debt variants.
 
 ## Build & Run Commands
 
 ```bash
 # Build
-go build -o realt-rmm .
+go build -o rmm-tracker .
 
 # Run once (requires DATABASE_URL env var)
-DATABASE_URL="postgres://user:pass@localhost:5432/realt_rmm?sslmode=disable" ./realt-rmm run
+DATABASE_URL="postgres://user:pass@localhost:5432/realt_rmm?sslmode=disable" ./rmm-tracker run
 
 # Run with custom config file
-DATABASE_URL="..." ./realt-rmm run --config /path/to/config.toml
+DATABASE_URL="..." ./rmm-tracker run --config /path/to/config.toml
 
 # Run in daemon mode (every 5 minutes)
-DATABASE_URL="..." ./realt-rmm run --interval 5m
+DATABASE_URL="..." ./rmm-tracker run --interval 5m
 
 # Validate configuration
-DATABASE_URL="..." ./realt-rmm validate-config
+DATABASE_URL="..." ./rmm-tracker validate-config
 
 # Check version
-./realt-rmm version
+./rmm-tracker version
 
 # View help
-./realt-rmm --help
-./realt-rmm run --help
+./rmm-tracker --help
+./rmm-tracker run --help
 
 # Download dependencies
 go mod download
@@ -85,14 +85,14 @@ http_port = 8080        # Health check endpoint port (daemon mode only)
 
 ### Environment Variables (override config file)
 
-**Recommended format with REALT_RMM_ prefix:**
-- `REALT_RMM_RPC_URLS`: Comma-separated RPC endpoints (recommended)
-- `REALT_RMM_RPC_URL`: Single RPC endpoint (legacy)
-- `REALT_RMM_WALLETS`: Comma-separated wallet addresses
-- `REALT_RMM_LOG_LEVEL`: Log level (debug, info, warn, error)
-- `REALT_RMM_INTERVAL`: Schedule interval - duration (e.g., "5m", "1h") or cron expression (e.g., "*/5 * * * *")
-- `REALT_RMM_RUN_IMMEDIATELY`: Execute immediately on startup (true/false, default: true)
-- `REALT_RMM_TIMEZONE`: Timezone for scheduling (e.g., "UTC", "America/New_York")
+**Recommended format with RMM_TRACKER_ prefix:**
+- `RMM_TRACKER_RPC_URLS`: Comma-separated RPC endpoints (recommended)
+- `RMM_TRACKER_RPC_URL`: Single RPC endpoint (legacy)
+- `RMM_TRACKER_WALLETS`: Comma-separated wallet addresses
+- `RMM_TRACKER_LOG_LEVEL`: Log level (debug, info, warn, error)
+- `RMM_TRACKER_INTERVAL`: Schedule interval - duration (e.g., "5m", "1h") or cron expression (e.g., "*/5 * * * *")
+- `RMM_TRACKER_RUN_IMMEDIATELY`: Execute immediately on startup (true/false, default: true)
+- `RMM_TRACKER_TIMEZONE`: Timezone for scheduling (e.g., "UTC", "America/New_York")
 - `DATABASE_URL` (required): PostgreSQL connection string
 
 **Legacy format (still supported):**
@@ -107,7 +107,7 @@ Modern modular architecture with cobra CLI, viper config, pgx database, and vali
 ### Package Structure
 
 ```
-realt-rmm/
+rmm-tracker/
 ├── main.go                 # Minimal entry point (calls cmd.Execute)
 ├── cmd/
 │   ├── root.go            # Root cobra command
@@ -271,16 +271,16 @@ Run the token balance tracker once or in daemon mode.
 
 ```bash
 # Run once (default)
-realt-rmm run
+rmm-tracker run
 
 # Daemon mode with interval
-realt-rmm run --interval 5m
+rmm-tracker run --interval 5m
 
 # Custom config
-realt-rmm run --config config.toml
+rmm-tracker run --config config.toml
 
 # Debug logging
-realt-rmm run --log-level debug
+rmm-tracker run --log-level debug
 ```
 
 Flags:
@@ -293,7 +293,7 @@ Flags:
 Validate configuration without running the application.
 
 ```bash
-realt-rmm validate-config --config config.toml
+rmm-tracker validate-config --config config.toml
 ```
 
 Useful for CI/CD pipelines and debugging configuration issues.
@@ -302,12 +302,12 @@ Useful for CI/CD pipelines and debugging configuration issues.
 Display version, git commit, and build time.
 
 ```bash
-realt-rmm version
+rmm-tracker version
 ```
 
 Build with version info:
 ```bash
-go build -ldflags "-X github.com/matrixise/realt-rmm/cmd.Version=1.0.0 -X github.com/matrixise/realt-rmm/cmd.GitCommit=$(git rev-parse HEAD) -X github.com/matrixise/realt-rmm/cmd.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o realt-rmm .
+go build -ldflags "-X github.com/matrixise/rmm-tracker/cmd.Version=1.0.0 -X github.com/matrixise/rmm-tracker/cmd.GitCommit=$(git rev-parse HEAD) -X github.com/matrixise/rmm-tracker/cmd.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o rmm-tracker .
 ```
 
 ## Quality Assurance
@@ -368,7 +368,7 @@ Declarative validation with `github.com/go-playground/validator/v10`:
 
 For users upgrading from v1, see `MIGRATION.md` for:
 - Breaking changes in CLI interface
-- New environment variable format (with REALT_RMM_ prefix)
+- New environment variable format (with RMM_TRACKER_ prefix)
 - Backward compatibility notes
 - Rollback instructions
 

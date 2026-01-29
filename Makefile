@@ -1,7 +1,7 @@
 .PHONY: help build test validate deploy start stop restart logs status health clean install
 
 # Variables
-APP_NAME=realt-rmm
+APP_NAME=rmm-tracker
 DOCKER_IMAGE=$(APP_NAME):latest
 GO_VERSION=1.25
 

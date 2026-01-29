@@ -28,11 +28,11 @@ func Load(configPath string) (*Config, error) {
 	}
 
 	// 3. Environment variables
-	v.SetEnvPrefix("REALT_RMM")
+	v.SetEnvPrefix("RMM_TRACKER")
 	v.AutomaticEnv()
 
 	// Map environment variables to config keys
-	// REALT_RMM_RPC_URL -> rpc_url
+	// RMM_TRACKER_RPC_URL -> rpc_url
 	v.BindEnv("rpc_url", "RPC_URL")
 	v.BindEnv("rpc_urls", "RPC_URLS")
 	v.BindEnv("wallets", "WALLETS")

@@ -11,9 +11,9 @@ var (
 
 // rootCmd represents the base command
 var rootCmd = &cobra.Command{
-	Use:   "realt-rmm",
-	Short: "RealT RMM token balance tracker",
-	Long: `RealT RMM monitors ERC-20 token balances on Gnosis Chain and persists
+	Use:   "rmm-tracker",
+	Short: "RMM token balance tracker",
+	Long: `rmm-tracker monitors ERC-20 token balances on Gnosis Chain and persists
 results to PostgreSQL. It tracks RealT RMM (Real Money Market) tokens including
 armmXDAI, armmUSDC, and their debt variants.`,
 }

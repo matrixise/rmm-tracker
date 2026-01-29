@@ -120,9 +120,9 @@ run_immediately = false      # Wait for 9am to start
 
 ### Environment Variables
 ```bash
-export REALT_RMM_INTERVAL="5m"
-export REALT_RMM_TIMEZONE="America/New_York"
-export REALT_RMM_RUN_IMMEDIATELY=true
+export RMM_TRACKER_INTERVAL="5m"
+export RMM_TRACKER_TIMEZONE="America/New_York"
+export RMM_TRACKER_RUN_IMMEDIATELY=true
 ```
 
 ## Testing
@@ -151,7 +151,7 @@ go test ./internal/scheduler -v
 
 ### Build Verification
 ```bash
-go build -o realt-rmm .
+go build -o rmm-tracker .
 ```
 **Result:** No compilation errors, no diagnostics
 
@@ -230,10 +230,10 @@ Potential improvements for future versions:
 
 ```bash
 # Validate config with duration
-DATABASE_URL="..." ./realt-rmm validate-config
+DATABASE_URL="..." ./rmm-tracker validate-config
 
 # Validate config with cron expression
-DATABASE_URL="..." REALT_RMM_INTERVAL="*/5 * * * *" ./realt-rmm validate-config
+DATABASE_URL="..." RMM_TRACKER_INTERVAL="*/5 * * * *" ./rmm-tracker validate-config
 
 # Run scheduler tests
 go test ./internal/scheduler -v
@@ -242,7 +242,7 @@ go test ./internal/scheduler -v
 ./test-scheduler.sh
 
 # Check for compilation errors
-go build -o realt-rmm .
+go build -o rmm-tracker .
 
 # Verify no Go diagnostics
 gopls check ./...
@@ -270,8 +270,8 @@ No changes required to docker-compose.yml. Existing configurations work as-is.
 
 ### Environment Variables
 New optional variables:
-- `REALT_RMM_TIMEZONE` (default: UTC)
-- `REALT_RMM_RUN_IMMEDIATELY` (default: true)
+- `RMM_TRACKER_TIMEZONE` (default: UTC)
+- `RMM_TRACKER_RUN_IMMEDIATELY` (default: true)
 
 ### Health Check
 Health endpoint `/health` now includes next run information in daemon check.

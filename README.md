@@ -1,4 +1,4 @@
-# RealT RMM Token Balance Tracker
+# RMM Tracker - Token Balance Tracker
 
 A Go application that monitors ERC-20 token balances on Gnosis Chain and persists results to PostgreSQL. Specifically designed to track RealT RMM (Real Money Market) tokens including armmXDAI, armmUSDC, and their debt variants.
 
@@ -28,11 +28,11 @@ A Go application that monitors ERC-20 token balances on Gnosis Chain and persist
 
 ```bash
 # Clone repository
-git clone https://github.com/matrixise/realt-rmm.git
-cd realt-rmm
+git clone https://github.com/matrixise/rmm-tracker.git
+cd rmm-tracker
 
 # Build
-go build -o realt-rmm .
+go build -o rmm-tracker .
 
 # Or use Docker
 docker compose build
@@ -83,20 +83,20 @@ export DATABASE_URL="postgres://user:pass@localhost:5432/realt_rmm?sslmode=disab
 
 ```bash
 # Run once
-DATABASE_URL="..." ./realt-rmm run
+DATABASE_URL="..." ./rmm-tracker run
 
 # Run in daemon mode (every 5 minutes)
-DATABASE_URL="..." ./realt-rmm run --interval 5m
+DATABASE_URL="..." ./rmm-tracker run --interval 5m
 
 # Validate configuration
-DATABASE_URL="..." ./realt-rmm validate-config
+DATABASE_URL="..." ./rmm-tracker validate-config
 
 # Check version
-./realt-rmm version
+./rmm-tracker version
 
 # Help
-./realt-rmm --help
-./realt-rmm run --help
+./rmm-tracker --help
+./rmm-tracker run --help
 ```
 
 ### Docker Deployment
@@ -126,16 +126,16 @@ Run the token balance tracker once or in daemon mode.
 **Examples:**
 ```bash
 # Run once
-realt-rmm run
+rmm-tracker run
 
 # Daemon mode
-realt-rmm run --interval 5m
+rmm-tracker run --interval 5m
 
 # Debug logging
-realt-rmm run --log-level debug
+rmm-tracker run --log-level debug
 
 # Custom config
-realt-rmm run --config production.toml
+rmm-tracker run --config production.toml
 ```
 
 ### validate-config
@@ -143,7 +143,7 @@ Validate configuration file without running the application.
 
 **Example:**
 ```bash
-DATABASE_URL="..." realt-rmm validate-config --config config.toml
+DATABASE_URL="..." rmm-tracker validate-config --config config.toml
 ```
 
 ### version
@@ -151,20 +151,20 @@ Display version, git commit, and build time.
 
 **Example:**
 ```bash
-realt-rmm version
+rmm-tracker version
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-**Recommended format (with REALT_RMM_ prefix):**
+**Recommended format (with RMM_TRACKER_ prefix):**
 ```bash
 export DATABASE_URL="postgres://..."                    # Required
-export REALT_RMM_RPC_URL="https://rpc.gnosischain.com"
-export REALT_RMM_WALLETS="0xAddr1,0xAddr2"
-export REALT_RMM_LOG_LEVEL="info"
-export REALT_RMM_INTERVAL="5m"
+export RMM_TRACKER_RPC_URL="https://rpc.gnosischain.com"
+export RMM_TRACKER_WALLETS="0xAddr1,0xAddr2"
+export RMM_TRACKER_LOG_LEVEL="info"
+export RMM_TRACKER_INTERVAL="5m"
 ```
 
 **Legacy format (still supported):**
@@ -179,7 +179,7 @@ See `.env.example` for a complete template.
 ### Configuration Precedence
 
 1. Command-line flags (highest priority)
-2. Environment variables with `REALT_RMM_` prefix
+2. Environment variables with `RMM_TRACKER_` prefix
 3. Environment variables without prefix (legacy)
 4. Configuration file
 5. Default values (lowest priority)
@@ -217,7 +217,7 @@ See `queries.sql` for example queries.
 Modern modular architecture:
 
 ```
-realt-rmm/
+rmm-tracker/
 ├── cmd/                   # Cobra commands
 │   ├── root.go
 │   ├── run.go
@@ -275,10 +275,10 @@ golangci-lint run
 
 # Build with version info
 go build -ldflags "\
-  -X github.com/matrixise/realt-rmm/cmd.Version=1.0.0 \
-  -X github.com/matrixise/realt-rmm/cmd.GitCommit=$(git rev-parse HEAD) \
-  -X github.com/matrixise/realt-rmm/cmd.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  -o realt-rmm .
+  -X github.com/matrixise/rmm-tracker/cmd.Version=1.0.0 \
+  -X github.com/matrixise/rmm-tracker/cmd.GitCommit=$(git rev-parse HEAD) \
+  -X github.com/matrixise/rmm-tracker/cmd.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -o rmm-tracker .
 ```
 
 ## Documentation

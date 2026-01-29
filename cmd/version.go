@@ -18,7 +18,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print version information",
 	Long:  `Display version, git commit, and build time information.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("realt-rmm %s\n", Version)
+		fmt.Printf("rmm-tracker %s\n", Version)
 		fmt.Printf("Commit: %s\n", GitCommit)
 		fmt.Printf("Built: %s\n", BuildTime)
 	},
