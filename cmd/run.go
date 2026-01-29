@@ -16,6 +16,7 @@ import (
 	"github.com/matrixise/realt-rmm/internal/config"
 	"github.com/matrixise/realt-rmm/internal/health"
 	"github.com/matrixise/realt-rmm/internal/logger"
+	"github.com/matrixise/realt-rmm/internal/scheduler"
 	"github.com/matrixise/realt-rmm/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +36,7 @@ var runCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	runCmd.Flags().StringVar(&interval, "interval", "", "run interval (e.g., 5m, 1h) - empty for one-time run")
+	runCmd.Flags().StringVar(&interval, "interval", "", "run interval - duration (5m, 1h) or cron (\"*/5 * * * *\") - empty for one-time run")
 	runCmd.Flags().BoolVar(&once, "once", false, "run once and exit (default)")
 }
 
@@ -118,12 +119,49 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		return processAllWallets(ctx, cfg, client, store)
 	}
 
-	// Daemon mode with interval
-	duration, err := time.ParseDuration(runInterval)
-	if err != nil {
-		slog.Error("Invalid interval", "interval", runInterval, "error", err)
+	// Daemon mode with scheduler
+	slog.Info("Starting daemon mode with scheduler",
+		"interval", runInterval,
+		"timezone", cfg.GetTimezone().String(),
+		"run_immediately", cfg.ShouldRunImmediately())
+
+	// Create scheduler configuration
+	schedulerCfg := scheduler.Config{
+		Interval:       runInterval,
+		Timezone:       cfg.GetTimezone(),
+		RunImmediately: cfg.ShouldRunImmediately(),
+		Logger:         slog.Default(),
+	}
+
+	// Create job function that tracks execution status
+	var healthChecker *health.Checker
+	jobFunc := func(jobCtx context.Context) error {
+		err := processAllWallets(jobCtx, cfg, client, store)
+		if healthChecker != nil {
+			healthChecker.UpdateLastRun(err == nil)
+		}
 		return err
 	}
+
+	// Create scheduler
+	sched, err := scheduler.NewScheduler(ctx, schedulerCfg, jobFunc)
+	if err != nil {
+		slog.Error("Failed to create scheduler", "error", err)
+		return fmt.Errorf("scheduler creation failed: %w", err)
+	}
+	defer sched.Stop()
+
+	// Determine expected interval for health checker
+	expectedInterval, err := sched.GetExpectedInterval()
+	if err != nil {
+		// Fallback to conservative estimate for irregular cron expressions
+		expectedInterval = 5 * time.Minute
+		slog.Warn("Could not determine exact interval, using conservative estimate",
+			"interval", expectedInterval)
+	}
+
+	// Create health checker with scheduler interface
+	healthChecker = health.NewChecker(store, client, sched, expectedInterval)
 
 	// Start health check server (daemon mode only)
 	httpPort := cfg.HTTPPort
@@ -131,9 +169,6 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		httpPort = 8080 // Default port
 	}
 
-	healthChecker := health.NewChecker(store, client, duration)
-
-	// Start HTTP server in background
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", httpPort),
 		Handler: http.HandlerFunc(healthChecker.Handler()),
@@ -155,34 +190,18 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
-	ticker := time.NewTicker(duration)
-	defer ticker.Stop()
-
-	slog.Info("Daemon mode started", "interval", runInterval)
-
-	// First run immediately
-	if err := processAllWallets(ctx, cfg, client, store); err != nil {
-		slog.Error("First execution error", "error", err)
-		healthChecker.UpdateLastRun(false)
-	} else {
-		healthChecker.UpdateLastRun(true)
+	// Start the scheduler
+	if err := sched.Start(); err != nil {
+		slog.Error("Failed to start scheduler", "error", err)
+		return fmt.Errorf("scheduler start failed: %w", err)
 	}
 
-	// Then run on interval
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Info("Shutdown requested, closing daemon")
-			return nil
-		case <-ticker.C:
-			if err := processAllWallets(ctx, cfg, client, store); err != nil {
-				slog.Error("Periodic execution error", "error", err)
-				healthChecker.UpdateLastRun(false)
-			} else {
-				healthChecker.UpdateLastRun(true)
-			}
-		}
-	}
+	slog.Info("Daemon mode started with clock-aligned scheduling")
+
+	// Wait for shutdown signal
+	<-ctx.Done()
+	slog.Info("Shutdown requested, stopping daemon")
+	return nil
 }
 
 func processAllWallets(ctx context.Context, cfg *config.Config, client *blockchain.Client, store *storage.Store) error {

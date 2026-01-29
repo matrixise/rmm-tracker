@@ -13,22 +13,30 @@ import (
 	"github.com/matrixise/realt-rmm/internal/storage"
 )
 
+// SchedulerInterface defines methods for querying scheduler state
+type SchedulerInterface interface {
+	NextRun() (time.Time, error)
+	LastRun() (time.Time, error)
+}
+
 // Checker performs health checks on application dependencies
 type Checker struct {
 	store          *storage.Store
 	client         *blockchain.Client
+	scheduler      SchedulerInterface
 	lastRunTime    time.Time
 	lastRunSuccess bool
-	interval       time.Duration
+	interval       time.Duration // Fallback for grace period calculation
 	mu             sync.RWMutex
 }
 
 // NewChecker creates a new health checker
-func NewChecker(store *storage.Store, client *blockchain.Client, interval time.Duration) *Checker {
+func NewChecker(store *storage.Store, client *blockchain.Client, scheduler SchedulerInterface, interval time.Duration) *Checker {
 	return &Checker{
-		store:    store,
-		client:   client,
-		interval: interval,
+		store:     store,
+		client:    client,
+		scheduler: scheduler,
+		interval:  interval,
 	}
 }
 
@@ -171,38 +179,79 @@ func (c *Checker) checkRPC(ctx context.Context) CheckDetail {
 // checkDaemon verifies the daemon is executing at expected intervals
 func (c *Checker) checkDaemon() CheckDetail {
 	c.mu.RLock()
-	defer c.mu.RUnlock()
+	lastRunTime := c.lastRunTime
+	lastRunSuccess := c.lastRunSuccess
+	c.mu.RUnlock()
+
+	// Try to get next scheduled run from scheduler for precise monitoring
+	var nextRun time.Time
+	var nextRunMsg string
+	if c.scheduler != nil {
+		if nr, err := c.scheduler.NextRun(); err == nil && !nr.IsZero() {
+			nextRun = nr
+			timeUntilNext := time.Until(nextRun)
+			if timeUntilNext > 0 {
+				nextRunMsg = fmt.Sprintf(", next run in %s", timeUntilNext.Round(time.Second))
+			} else {
+				// We've passed the next scheduled run time
+				graceThreshold := 2 * time.Minute
+				if time.Now().After(nextRun.Add(graceThreshold)) {
+					return CheckDetail{
+						Status:  StatusDegraded,
+						Message: fmt.Sprintf("missed scheduled run at %s", nextRun.Format(time.RFC3339)),
+					}
+				}
+				nextRunMsg = " (execution overdue but within grace period)"
+			}
+		}
+	}
 
 	// If we've never run, that's OK (might be starting up)
-	if c.lastRunTime.IsZero() {
+	if lastRunTime.IsZero() {
+		msg := "daemon not yet executed (startup)"
+		if nextRunMsg != "" {
+			msg += nextRunMsg
+		}
 		return CheckDetail{
 			Status:  StatusOK,
-			Message: "daemon not yet executed (startup)",
+			Message: msg,
 		}
 	}
 
 	// Check if last run was successful
-	if !c.lastRunSuccess {
+	if !lastRunSuccess {
+		msg := "last execution failed"
+		if nextRunMsg != "" {
+			msg += nextRunMsg
+		}
 		return CheckDetail{
 			Status:  StatusDegraded,
-			Message: "last execution failed",
+			Message: msg,
 		}
 	}
 
 	// Check if we're running on schedule (allow 2x interval grace period)
-	timeSinceLastRun := time.Since(c.lastRunTime)
+	timeSinceLastRun := time.Since(lastRunTime)
 	graceThreshold := c.interval * 2
 
 	if timeSinceLastRun > graceThreshold {
+		msg := fmt.Sprintf("no execution in %s (expected every %s)", timeSinceLastRun.Round(time.Second), c.interval)
+		if nextRunMsg != "" {
+			msg += nextRunMsg
+		}
 		return CheckDetail{
 			Status:  StatusDegraded,
-			Message: fmt.Sprintf("no execution in %s (expected every %s)", timeSinceLastRun.Round(time.Second), c.interval),
+			Message: msg,
 		}
 	}
 
+	msg := fmt.Sprintf("last executed %s ago", timeSinceLastRun.Round(time.Second))
+	if nextRunMsg != "" {
+		msg += nextRunMsg
+	}
 	return CheckDetail{
 		Status:  StatusOK,
-		Message: fmt.Sprintf("last executed %s ago", timeSinceLastRun.Round(time.Second)),
+		Message: msg,
 	}
 }
 

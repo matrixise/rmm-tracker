@@ -65,10 +65,22 @@ label = "armmUSDC"
 address = "0x..."
 fallback_decimals = 6
 
-# Optional
-interval = "5m"        # Enable daemon mode
-log_level = "info"     # debug, info, warn, error
-http_port = 8080       # Health check endpoint port (daemon mode only)
+# Optional: Scheduler configuration
+# Option 1: Duration (automatically converted to clock-aligned cron)
+interval = "5m"        # Runs at :00, :05, :10, :15, :20, :25, etc.
+
+# Option 2: Cron expression for advanced scheduling
+# interval = "*/5 * * * *"      # Every 5 minutes
+# interval = "0 */2 * * *"      # Every 2 hours at :00
+# interval = "0 9,17 * * 1-5"   # 9am and 5pm on weekdays
+
+# Scheduler options
+run_immediately = true  # Execute immediately on startup (default: true)
+timezone = "UTC"        # Timezone for scheduling (default: UTC)
+
+# Other options
+log_level = "info"      # debug, info, warn, error
+http_port = 8080        # Health check endpoint port (daemon mode only)
 ```
 
 ### Environment Variables (override config file)
@@ -78,7 +90,9 @@ http_port = 8080       # Health check endpoint port (daemon mode only)
 - `REALT_RMM_RPC_URL`: Single RPC endpoint (legacy)
 - `REALT_RMM_WALLETS`: Comma-separated wallet addresses
 - `REALT_RMM_LOG_LEVEL`: Log level (debug, info, warn, error)
-- `REALT_RMM_INTERVAL`: Daemon interval (e.g., "5m", "1h")
+- `REALT_RMM_INTERVAL`: Schedule interval - duration (e.g., "5m", "1h") or cron expression (e.g., "*/5 * * * *")
+- `REALT_RMM_RUN_IMMEDIATELY`: Execute immediately on startup (true/false, default: true)
+- `REALT_RMM_TIMEZONE`: Timezone for scheduling (e.g., "UTC", "America/New_York")
 - `DATABASE_URL` (required): PostgreSQL connection string
 
 **Legacy format (still supported):**
@@ -137,9 +151,36 @@ realt-rmm/
 - **Batch operations**: pgx.Batch API for efficient bulk inserts
 - **Structured logging**: JSON logs with contextual metadata
 - **Graceful shutdown**: Signal handling with context cancellation
-- **Daemon mode**: Optional interval-based execution
+- **Clock-aligned scheduling**: gocron v2 for precise, predictable execution timing
+- **Daemon mode**: Optional interval-based or cron-based scheduling
 
 The application iterates over configured wallets, queries tokens in parallel using goroutines, then batch-inserts results per wallet using transactions.
+
+### Scheduling System
+
+The daemon mode uses **gocron v2** for clock-aligned scheduling:
+
+**Duration-based scheduling (automatic clock alignment):**
+- `5m` → Executes at :00, :05, :10, :15, :20, etc. (not relative to startup)
+- `1h` → Executes at :00 every hour
+- `30m` → Executes at :00 and :30 every hour
+
+**Cron expression support:**
+- `"*/5 * * * *"` → Every 5 minutes at clock boundaries
+- `"0 */2 * * *"` → Every 2 hours at :00
+- `"0 9,17 * * 1-5"` → 9am and 5pm on weekdays
+- `"30 */6 * * *"` → Every 6 hours at :30
+
+**Features:**
+- **Clock alignment**: Duration intervals like `5m` automatically align to clock boundaries (not relative to container start)
+- **Timezone support**: Configure timezone for cron expressions (default: UTC)
+- **Run immediately**: Optional immediate execution on startup (default: enabled)
+- **Validation**: Only accepts durations that divide evenly into 60 (minutes) or 24 (hours)
+- **Health monitoring**: Health endpoint shows next scheduled run time
+
+**Valid intervals:** 1m, 5m, 10m, 15m, 20m, 30m, 1h, 2h, 3h, 4h, 6h, 8h, 12h, 24h
+
+**Invalid intervals:** 7m, 13m, 45m, 5h, 7h (use cron expressions for non-standard intervals)
 
 ### Health Check Endpoint
 

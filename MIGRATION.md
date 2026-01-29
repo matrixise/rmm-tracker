@@ -1,4 +1,153 @@
-# Migration Guide: v1 to v2
+# Migration Guide
+
+This guide helps users migrate between versions of realt-rmm.
+
+## v2 to v3: Clock-Aligned Scheduling
+
+Version 3 introduces **gocron v2** for clock-aligned scheduling, replacing the time.Ticker-based implementation.
+
+### What Changed?
+
+**Scheduling Behavior:**
+- **v2**: Executions were relative to container startup
+  - Start at 09:03:27 with `interval = "5m"` → runs at 09:03, 09:08, 09:13, 09:18...
+- **v3**: Executions align to clock boundaries
+  - Start at 09:03:27 with `interval = "5m"` → runs at 09:05, 09:10, 09:15, 09:20...
+
+### Breaking Changes
+
+**Invalid Intervals:**
+Non-standard intervals that don't divide evenly are now rejected:
+
+```bash
+# ❌ These will fail in v3
+interval = "7m"   # Error: minute intervals must divide evenly into 60
+interval = "5h"   # Error: hour intervals must divide evenly into 24
+interval = "13m"  # Error: not a standard divisor of 60
+
+# ✅ Use these instead
+interval = "5m"   # OK: divides evenly into 60
+interval = "6h"   # OK: divides evenly into 24
+
+# ✅ Or use cron expressions for non-standard intervals
+interval = "*/7 * * * *"   # Every 7 minutes (non-aligned)
+```
+
+**Valid Intervals:**
+- **Minutes**: 1, 5, 10, 15, 20, 30
+- **Hours**: 1, 2, 3, 4, 6, 8, 12, 24
+- **Seconds**: 10, 15, 30 (for sub-minute scheduling)
+
+### New Features
+
+**1. Cron Expression Support:**
+```toml
+# Advanced scheduling with cron expressions
+interval = "0 9,17 * * 1-5"   # 9am and 5pm on weekdays
+interval = "*/15 * * * *"      # Every 15 minutes
+interval = "0 */2 * * *"       # Every 2 hours at :00
+```
+
+**2. Timezone Support:**
+```toml
+# Configure timezone for scheduling
+timezone = "America/New_York"  # Eastern Time
+# timezone = "Europe/Paris"    # Central European Time
+# timezone = "UTC"             # Default
+```
+
+Or via environment variable:
+```bash
+REALT_RMM_TIMEZONE=America/New_York
+```
+
+**3. Run Immediately Option:**
+```toml
+# Control immediate execution on startup
+run_immediately = false  # Skip first execution, wait for schedule
+```
+
+Or via environment variable:
+```bash
+REALT_RMM_RUN_IMMEDIATELY=false
+```
+
+### Migration Steps
+
+**Step 1: Check Your Interval**
+
+Review your current `interval` configuration:
+
+```bash
+# Check if your interval is valid for v3
+DATABASE_URL="..." ./realt-rmm validate-config
+```
+
+**Step 2: Update Invalid Intervals**
+
+If you have a non-standard interval:
+
+```toml
+# Option A: Use a standard interval
+# BEFORE
+interval = "7m"
+
+# AFTER
+interval = "5m"   # or 10m, depending on your needs
+
+# Option B: Use a cron expression
+# BEFORE
+interval = "7m"
+
+# AFTER
+interval = "*/7 * * * *"  # Preserves 7-minute interval (non-aligned)
+```
+
+**Step 3: (Optional) Configure Timezone**
+
+If you need scheduling in a specific timezone:
+
+```toml
+interval = "0 9 * * *"      # Run at 9am
+timezone = "America/New_York"  # Eastern Time
+```
+
+**Step 4: Test**
+
+Run in daemon mode and verify clock alignment:
+
+```bash
+DATABASE_URL="..." ./realt-rmm run --interval 5m --log-level debug
+```
+
+Check logs for:
+```
+"Converting duration to cron" cron="*/5 * * * *"
+"Scheduler started" next_run="2026-01-28T22:05:00Z"
+```
+
+### Compatibility
+
+**✅ No Changes Required:**
+- Standard intervals: `5m`, `10m`, `15m`, `30m`, `1h`, `2h`, `6h`, `12h`
+- All existing config files with standard intervals work without modification
+- Environment variables unchanged (same `REALT_RMM_*` prefix)
+
+**⚠️ May Require Changes:**
+- Non-standard intervals: `7m`, `13m`, `45m`, `5h`, `7h`, etc.
+- If you relied on relative (non-aligned) execution timing
+
+### Rollback to v2
+
+If you need to rollback:
+
+```bash
+git checkout v2.x.x  # Your previous v2 version
+docker compose build
+docker compose up -d
+```
+
+## v1 to v2: Modular Architecture
 
 This guide helps users migrate from the original monolithic version to the new modular architecture with cobra, viper, pgx, and validator.
 

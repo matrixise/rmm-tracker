@@ -23,10 +23,17 @@ RUN if [ "$ENABLE_LINT" = "true" ]; then \
         echo "Linting disabled (use --build-arg ENABLE_LINT=true to enable)"; \
     fi
 
+# Build args for version info
+ARG VERSION=dev
+ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
+
 # Build
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux go build -o realt-rmm .
+    CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags "-X github.com/matrixise/realt-rmm/cmd.Version=${VERSION} -X github.com/matrixise/realt-rmm/cmd.GitCommit=${GIT_COMMIT} -X github.com/matrixise/realt-rmm/cmd.BuildTime=${BUILD_TIME}" \
+    -o realt-rmm .
 
 FROM alpine:latest
 

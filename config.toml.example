@@ -1,0 +1,52 @@
+# Multiple RPC endpoints for high availability (recommended for production)
+rpc_urls = [
+    "https://rpc.gnosischain.com",
+    "https://gnosis.drpc.org",
+    # "https://rpc.ankr.com/gnosis"
+]
+
+# Or use single endpoint (simpler, less resilient)
+# rpc_url = "https://rpc.gnosischain.com"
+
+# Scheduler configuration
+# Option 1: Duration (automatically converted to clock-aligned cron)
+interval = "5m"  # Runs at :00, :05, :10, :15, :20, :25, etc.
+
+# Option 2: Cron expression for advanced scheduling
+# interval = "*/5 * * * *"      # Every 5 minutes (same as above)
+# interval = "0 */2 * * *"      # Every 2 hours at :00
+# interval = "0 9,17 * * 1-5"   # 9am and 5pm on weekdays
+# interval = "30 */6 * * *"     # Every 6 hours at :30
+
+# Scheduler options
+# run_immediately = true        # Execute immediately on startup (default: true)
+# timezone = "UTC"              # Timezone for scheduling (default: UTC)
+# timezone = "America/New_York" # Example: Eastern Time
+
+
+
+wallets = [
+  "0x1234567890123456789012345678901234567890"
+  "0x2345678901234567890123456789012345678901"
+  "0x3456789012345678901234567890123456789012"
+]
+
+[[tokens]]
+label = "armmXDAI"
+address = "0x0cA4f5554Dd9Da6217d62D8df2816c82bba4157b"
+fallback_decimals = 18
+
+[[tokens]]
+label = "armmUSDC"
+address = "0xeD56F76E9cBC6A64b821e9c016eAFbd3db5436D1"
+fallback_decimals = 6
+
+[[tokens]]
+label = "armmXDAIDEBT"
+address = "0x9908801dF7902675C3FEDD6Fea0294D18D5d5d34"
+fallback_decimals = 18
+
+[[tokens]]
+label = "armmUSDCDEBT"
+address = "0x69c731aE5f5356a779f44C355aBB685d84e5E9e6"
+fallback_decimals = 6

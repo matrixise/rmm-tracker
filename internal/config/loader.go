@@ -13,8 +13,10 @@ func Load(configPath string) (*Config, error) {
 
 	// 1. Set defaults
 	v.SetDefault("log_level", "info")
-	v.SetDefault("interval", "")    // Run once by default
+	v.SetDefault("interval", "")       // Run once by default
 	v.SetDefault("http_port", 8080)
+	v.SetDefault("run_immediately", true)
+	v.SetDefault("timezone", "UTC")
 
 	// 2. Configure config file
 	if configPath != "" {
@@ -37,6 +39,8 @@ func Load(configPath string) (*Config, error) {
 	v.BindEnv("log_level", "LOG_LEVEL")
 	v.BindEnv("interval", "INTERVAL")
 	v.BindEnv("http_port", "HTTP_PORT")
+	v.BindEnv("run_immediately", "RUN_IMMEDIATELY")
+	v.BindEnv("timezone", "TIMEZONE")
 
 	// 4. Read config file
 	if err := v.ReadInConfig(); err != nil {
