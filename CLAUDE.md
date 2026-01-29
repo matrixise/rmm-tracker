@@ -8,6 +8,37 @@ rmm-tracker is a Go application that queries ERC-20 token balances on Gnosis Cha
 
 ## Build & Run Commands
 
+The project uses [Taskfile](https://taskfile.dev/) as task runner. Run `task --list` to see all available tasks.
+
+```bash
+# Build & quality
+task build                  # Build binary with version info
+task test                   # Run all tests
+task test:verbose           # Run tests with verbose output
+task test:coverage          # Run tests with coverage report
+task test:coverage:html     # Open coverage in browser
+task vet                    # Run go vet
+task clean                  # Remove build artifacts
+
+# Database migrations
+task migrate:up             # Apply pending migrations
+task migrate:down           # Rollback last migration
+task migrate:status         # Show migration status
+
+# Docker
+task docker:build           # Build Docker image
+task docker:up              # Start PostgreSQL + app
+task docker:down            # Stop all services
+task docker:logs            # Follow app logs
+task docker:ps              # Show container status
+
+# Run
+task run                    # Run tracker once
+task run:daemon             # Run in daemon mode (5m)
+```
+
+### Direct commands (without Taskfile)
+
 ```bash
 # Build
 go build -o rmm-tracker .
@@ -33,12 +64,6 @@ DATABASE_URL="..." ./rmm-tracker validate-config
 
 # Download dependencies
 go mod download
-
-# Docker commands
-docker compose build        # Build application image
-docker compose up -d        # Start PostgreSQL and run app
-docker compose up app       # Run app once (foreground)
-docker compose logs app     # View application logs
 ```
 
 ## Configuration
@@ -109,6 +134,7 @@ Modern modular architecture with cobra CLI, viper config, pgx database, and vali
 ```
 rmm-tracker/
 ├── main.go                 # Minimal entry point (calls cmd.Execute)
+├── Taskfile.yml            # Task runner (build, test, docker, migrate)
 ├── cmd/
 │   ├── root.go            # Root cobra command
 │   ├── run.go             # Run command (once or daemon)
@@ -144,6 +170,8 @@ rmm-tracker/
 - **Validation**: `github.com/go-playground/validator/v10` with custom Ethereum address validator
 - **Blockchain**: `github.com/ethereum/go-ethereum` for RPC calls and ERC-20 ABI
 - **Migrations**: `github.com/pressly/goose/v3` for versioned SQL migrations (embedded in binary)
+- **Testing**: `github.com/stretchr/testify` for assertions (`assert`, `require`)
+- **Task runner**: [Taskfile](https://taskfile.dev/) for development workflows (`Taskfile.yml`)
 - **Logging**: `log/slog` for structured JSON logs
 
 ### Core Features

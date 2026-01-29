@@ -192,3 +192,220 @@ func TestConfigIsCronExpression(t *testing.T) {
 		})
 	}
 }
+
+func TestNewValidator(t *testing.T) {
+	validator := NewValidator()
+	assert.NotNil(t, validator)
+
+	// Test that validator has custom validators registered
+	t.Run("eth_addr validator registered", func(t *testing.T) {
+		cfg := &Config{
+			RPCUrls: []string{"https://rpc.example.com"},
+			Wallets: []string{"0x1234567890123456789012345678901234567890"},
+			Tokens: []TokenConfig{
+				{Label: "TEST", Address: "0x0000000000000000000000000000000000000000", FallbackDecimals: 18},
+			},
+		}
+		err := validator.Struct(cfg)
+		assert.NoError(t, err)
+	})
+
+	t.Run("schedule validator registered", func(t *testing.T) {
+		cfg := &Config{
+			RPCUrls:  []string{"https://rpc.example.com"},
+			Wallets:  []string{"0x1234567890123456789012345678901234567890"},
+			Interval: "5m",
+			Tokens: []TokenConfig{
+				{Label: "TEST", Address: "0x0000000000000000000000000000000000000000", FallbackDecimals: 18},
+			},
+		}
+		err := validator.Struct(cfg)
+		assert.NoError(t, err)
+	})
+
+	t.Run("timezone validator registered", func(t *testing.T) {
+		cfg := &Config{
+			RPCUrls:  []string{"https://rpc.example.com"},
+			Wallets:  []string{"0x1234567890123456789012345678901234567890"},
+			Timezone: "America/New_York",
+			Tokens: []TokenConfig{
+				{Label: "TEST", Address: "0x0000000000000000000000000000000000000000", FallbackDecimals: 18},
+			},
+		}
+		err := validator.Struct(cfg)
+		assert.NoError(t, err)
+	})
+}
+
+func TestTokenConfigValidation(t *testing.T) {
+	validator := NewValidator()
+
+	tests := []struct {
+		name      string
+		token     TokenConfig
+		wantError bool
+	}{
+		{
+			name: "valid token config",
+			token: TokenConfig{
+				Label:            "TEST",
+				Address:          "0x0000000000000000000000000000000000000000",
+				FallbackDecimals: 18,
+			},
+			wantError: false,
+		},
+		{
+			name: "missing label",
+			token: TokenConfig{
+				Address:          "0x0000000000000000000000000000000000000000",
+				FallbackDecimals: 18,
+			},
+			wantError: true,
+		},
+		{
+			name: "invalid address",
+			token: TokenConfig{
+				Label:            "TEST",
+				Address:          "invalid",
+				FallbackDecimals: 18,
+			},
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				RPCUrls: []string{"https://rpc.example.com"},
+				Wallets: []string{"0x1234567890123456789012345678901234567890"},
+				Tokens:  []TokenConfig{tt.token},
+			}
+			err := validator.Struct(cfg)
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigHTTPPortValidation(t *testing.T) {
+	validator := NewValidator()
+
+	tests := []struct {
+		name      string
+		httpPort  int
+		wantError bool
+	}{
+		{
+			name:      "valid port 8080",
+			httpPort:  8080,
+			wantError: false,
+		},
+		{
+			name:      "valid port 9090",
+			httpPort:  9090,
+			wantError: false,
+		},
+		{
+			name:      "port too low (1023)",
+			httpPort:  1023,
+			wantError: true,
+		},
+		{
+			name:      "port too high (65536)",
+			httpPort:  65536,
+			wantError: true,
+		},
+		{
+			name:      "minimum valid port (1024)",
+			httpPort:  1024,
+			wantError: false,
+		},
+		{
+			name:      "maximum valid port (65535)",
+			httpPort:  65535,
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				RPCUrls:  []string{"https://rpc.example.com"},
+				Wallets:  []string{"0x1234567890123456789012345678901234567890"},
+				HTTPPort: tt.httpPort,
+				Tokens: []TokenConfig{
+					{Label: "TEST", Address: "0x0000000000000000000000000000000000000000", FallbackDecimals: 18},
+				},
+			}
+			err := validator.Struct(cfg)
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigLogLevelValidation(t *testing.T) {
+	validator := NewValidator()
+
+	tests := []struct {
+		name      string
+		logLevel  string
+		wantError bool
+	}{
+		{
+			name:      "valid debug",
+			logLevel:  "debug",
+			wantError: false,
+		},
+		{
+			name:      "valid info",
+			logLevel:  "info",
+			wantError: false,
+		},
+		{
+			name:      "valid warn",
+			logLevel:  "warn",
+			wantError: false,
+		},
+		{
+			name:      "valid error",
+			logLevel:  "error",
+			wantError: false,
+		},
+		{
+			name:      "invalid level",
+			logLevel:  "invalid",
+			wantError: true,
+		},
+		{
+			name:      "empty is valid (uses default)",
+			logLevel:  "",
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				RPCUrls:  []string{"https://rpc.example.com"},
+				Wallets:  []string{"0x1234567890123456789012345678901234567890"},
+				LogLevel: tt.logLevel,
+				Tokens: []TokenConfig{
+					{Label: "TEST", Address: "0x0000000000000000000000000000000000000000", FallbackDecimals: 18},
+				},
+			}
+			err := validator.Struct(cfg)
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
