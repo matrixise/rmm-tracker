@@ -82,6 +82,13 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		"interval", runInterval,
 	)
 
+	// Run database migrations
+	if err := storage.RunMigrations(ctx, databaseURL); err != nil {
+		slog.Error("Failed to run migrations", "error", err)
+		return err
+	}
+	slog.Info("Database migrations applied")
+
 	// Connect to PostgreSQL
 	store, err := storage.NewStore(ctx, databaseURL)
 	if err != nil {
@@ -90,12 +97,6 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	}
 	defer store.Close()
 	slog.Info("PostgreSQL connection established")
-
-	// Create schema
-	if err := store.CreateSchema(ctx); err != nil {
-		slog.Error("Failed to create schema", "error", err)
-		return err
-	}
 
 	// Connect to blockchain with failover support
 	client, err := blockchain.NewClient(cfg.RPCUrls)

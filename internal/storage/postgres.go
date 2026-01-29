@@ -9,32 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const createTableSQL = `
--- Drop existing table to migrate schema (removes label column)
-CREATE TABLE IF NOT EXISTS token_balances (
-	id            BIGSERIAL PRIMARY KEY,
-	queried_at    TIMESTAMPTZ NOT NULL,
-	wallet        TEXT NOT NULL,
-	token_address TEXT NOT NULL,
-	symbol        TEXT NOT NULL,
-	decimals      SMALLINT NOT NULL,
-	raw_balance   TEXT NOT NULL,
-	balance       TEXT NOT NULL
-);
-
--- Composite index for historical queries by wallet and token
-CREATE INDEX IF NOT EXISTS idx_token_balances_wallet_token_time
-	ON token_balances(wallet, token_address, queried_at DESC);
-
--- Index for time-based queries across all wallets
-CREATE INDEX IF NOT EXISTS idx_token_balances_queried_at
-	ON token_balances(queried_at DESC);
-
--- Index for wallet-wide queries
-CREATE INDEX IF NOT EXISTS idx_token_balances_wallet
-	ON token_balances(wallet);
-`
-
 // Store manages PostgreSQL operations
 type Store struct {
 	pool *pgxpool.Pool
@@ -72,15 +46,6 @@ func NewStore(ctx context.Context, dsn string) (*Store, error) {
 // Close closes the connection pool
 func (s *Store) Close() {
 	s.pool.Close()
-}
-
-// CreateSchema creates the table and indexes
-func (s *Store) CreateSchema(ctx context.Context) error {
-	_, err := s.pool.Exec(ctx, createTableSQL)
-	if err != nil {
-		return fmt.Errorf("failed to create schema: %w", err)
-	}
-	return nil
 }
 
 // BatchInsertBalances inserts multiple token balances using pgx.Batch

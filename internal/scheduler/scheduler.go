@@ -126,18 +126,17 @@ func NewScheduler(ctx context.Context, cfg Config, jobFunc JobFunc) (*Scheduler,
 
 // Start begins the scheduler
 func (s *Scheduler) Start() error {
+	// Start the scheduler first (required before RunNow)
+	s.gocronScheduler.Start()
+
 	// Run immediately if configured
 	if s.runImmediately {
-		s.logger.Info("Executing job immediately before starting scheduler")
-		// Execute the job's task once (gocron handles this internally when job is created)
+		s.logger.Info("Executing job immediately")
 		if err := s.job.RunNow(); err != nil {
 			s.logger.Error("Immediate execution failed", "error", err)
 			// Don't return error, continue with scheduled execution
 		}
 	}
-
-	// Start the scheduler
-	s.gocronScheduler.Start()
 
 	nextRun, err := s.NextRun()
 	if err == nil {

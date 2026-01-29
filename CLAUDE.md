@@ -112,6 +112,7 @@ rmm-tracker/
 ├── cmd/
 │   ├── root.go            # Root cobra command
 │   ├── run.go             # Run command (once or daemon)
+│   ├── migrate.go         # Database migration commands
 │   ├── validate.go        # Config validation command
 │   └── version.go         # Version command
 ├── internal/
@@ -124,6 +125,9 @@ rmm-tracker/
 │   │   └── failover.go    # RPC failover client
 │   ├── storage/
 │   │   ├── postgres.go    # pgx pool and operations
+│   │   ├── migrate.go     # Goose migration runner (embedded SQL)
+│   │   ├── migrations/    # SQL migration files
+│   │   │   └── 001_create_token_balances.sql
 │   │   └── models.go      # Data models
 │   ├── health/
 │   │   └── health.go      # Health check endpoint (daemon mode)
@@ -139,6 +143,7 @@ rmm-tracker/
 - **Database**: `github.com/jackc/pgx/v5` with connection pooling (30-50% faster than lib/pq)
 - **Validation**: `github.com/go-playground/validator/v10` with custom Ethereum address validator
 - **Blockchain**: `github.com/ethereum/go-ethereum` for RPC calls and ERC-20 ABI
+- **Migrations**: `github.com/pressly/goose/v3` for versioned SQL migrations (embedded in binary)
 - **Logging**: `log/slog` for structured JSON logs
 
 ### Core Features
@@ -289,6 +294,22 @@ Flags:
 - `--interval`: Run interval for daemon mode (e.g., 5m, 1h)
 - `--once`: Run once and exit (redundant with default behavior)
 
+### migrate
+Manage database migrations manually.
+
+```bash
+# Apply all pending migrations
+DATABASE_URL="..." rmm-tracker migrate up
+
+# Rollback the last migration
+DATABASE_URL="..." rmm-tracker migrate down
+
+# Show migration status
+DATABASE_URL="..." rmm-tracker migrate status
+```
+
+**Note:** Migrations are also applied automatically on `rmm-tracker run` startup. The `migrate` command is useful for manual management without running the tracker.
+
 ### validate-config
 Validate configuration without running the application.
 
@@ -319,9 +340,15 @@ go build -ldflags "-X github.com/matrixise/rmm-tracker/cmd.Version=1.0.0 -X gith
 - **Observability**: JSON logs ready for ELK, Loki, or other log aggregators
 - **Type safety**: Strongly-typed config structs with validation
 
-## Database Schema & Indexes
+## Database Schema & Migrations
 
-The `token_balances` table is automatically created with optimized indexes:
+The database schema is managed by [goose](https://github.com/pressly/goose) versioned migrations. Migration SQL files are embedded in the binary via `go:embed`, so no external files are needed at runtime.
+
+Migrations run automatically on `rmm-tracker run` startup, or manually via `rmm-tracker migrate up`. Goose tracks applied migrations in a `goose_db_version` table.
+
+The initial migration uses `IF NOT EXISTS` for backward compatibility with existing databases.
+
+### token_balances table
 
 ```sql
 CREATE TABLE token_balances (
