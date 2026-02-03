@@ -12,6 +12,8 @@ vars:
     sh: date -u +%Y-%m-%dT%H:%M:%SZ
   DATABASE_URL: postgres://realt:realt@localhost:5432/realt_rmm?sslmode=disable
   COVERAGE_FILE: coverage.out
+  DOCKER_HUB_USER: matrixise
+  DOCKER_HUB_IMAGE: "{{.DOCKER_HUB_USER}}/rmm-tracker"
 
 tasks:
   default:
@@ -100,6 +102,44 @@ tasks:
     desc: Show running containers and health status
     cmds:
       - docker compose ps
+
+  docker:buildx:setup:
+    desc: Setup Docker buildx for multi-arch builds
+    cmds:
+      - docker buildx create --name rmm-builder --use --bootstrap || docker buildx use rmm-builder
+      - docker buildx inspect --bootstrap
+    status:
+      - docker buildx ls | grep rmm-builder
+
+  docker:buildx:build:
+    desc: Build multi-arch image (AMD64 + ARM64) locally
+    deps: [docker:buildx:setup]
+    cmds:
+      - |
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --build-arg VERSION={{.VERSION}} \
+          --build-arg GIT_COMMIT={{.GIT_COMMIT}} \
+          --build-arg BUILD_TIME={{.BUILD_TIME}} \
+          -t {{.DOCKER_HUB_IMAGE}}:{{.VERSION}} \
+          -t {{.DOCKER_HUB_IMAGE}}:latest \
+          --load \
+          .
+
+  docker:buildx:push:
+    desc: Build and push multi-arch image (AMD64 + ARM64) to Docker Hub
+    deps: [docker:buildx:setup]
+    cmds:
+      - |
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --build-arg VERSION={{.VERSION}} \
+          --build-arg GIT_COMMIT={{.GIT_COMMIT}} \
+          --build-arg BUILD_TIME={{.BUILD_TIME}} \
+          -t {{.DOCKER_HUB_IMAGE}}:{{.VERSION}} \
+          -t {{.DOCKER_HUB_IMAGE}}:latest \
+          --push \
+          .
 
   # ── Development ────────────────────────────────────────
 
