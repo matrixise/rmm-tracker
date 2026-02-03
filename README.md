@@ -76,7 +76,7 @@ log_level = "info"     # debug, info, warn, error
 Set DATABASE_URL:
 
 ```bash
-export DATABASE_URL="postgres://user:pass@localhost:5432/realt_rmm?sslmode=disable"
+export DATABASE_URL="postgres://user:pass@localhost:5432/rmm_tracker?sslmode=disable"
 ```
 
 ### Usage

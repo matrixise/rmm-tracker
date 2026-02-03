@@ -10,7 +10,7 @@ vars:
     sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
   BUILD_TIME:
     sh: date -u +%Y-%m-%dT%H:%M:%SZ
-  DATABASE_URL: postgres://realt:realt@localhost:5432/realt_rmm?sslmode=disable
+  DATABASE_URL: postgres://rmm:rmm@localhost:5432/rmm_tracker?sslmode=disable
   COVERAGE_FILE: coverage.out
   DOCKER_HUB_USER: matrixise
   DOCKER_HUB_IMAGE: "{{.DOCKER_HUB_USER}}/rmm-tracker"
