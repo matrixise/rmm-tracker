@@ -1,6 +1,9 @@
 # Environment variables
 .env
 
+# Local configuration (use config.toml.example as template)
+config.toml
+
 # Build artifacts
 rmm-tracker
 *.exe
