@@ -255,7 +255,7 @@ rmm-tracker/
 
 ## Migration from v1
 
-If upgrading from the original monolithic version, see `MIGRATION.md` for:
+If upgrading from the original monolithic version, see [`docs/MIGRATION.md`](docs/MIGRATION.md) for:
 - CLI command changes
 - Environment variable updates
 - Backward compatibility notes
@@ -283,8 +283,10 @@ go build -ldflags "\
 
 ## Documentation
 
-- **CLAUDE.md**: Architecture and development guide for Claude Code
-- **MIGRATION.md**: Migration guide from v1 to v2
+- **[docs/CLAUDE.md](docs/CLAUDE.md)**: Architecture and development guide for Claude Code
+- **[docs/MIGRATION.md](docs/MIGRATION.md)**: Migration guide from v1 to v2
+- **[docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)**: Performance improvements and optimization notes
+- **[docs/SCHEDULER-IMPLEMENTATION.md](docs/SCHEDULER-IMPLEMENTATION.md)**: Scheduler implementation details
 - **queries.sql**: Example database queries
 - **.env.example**: Environment variable template
 
