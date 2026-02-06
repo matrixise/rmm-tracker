@@ -46,3 +46,5 @@ venv/
 ENV/
 env/
 .Python
+.pnpm-debug.log
+*.dump.sql
