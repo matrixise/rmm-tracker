@@ -112,15 +112,17 @@ tasks:
       - docker buildx ls | grep rmm-builder
 
   docker:buildx:build:
-    desc: Build multi-arch image (AMD64 + ARM64) locally
+    desc: Build linux/amd64 image and load into Docker (for deployment testing)
     deps: [docker:buildx:setup]
     cmds:
       - |
         docker buildx build \
-          --platform linux/amd64,linux/arm64 \
+          --builder rmm-builder \
+          --platform linux/amd64 \
           --build-arg VERSION={{.VERSION}} \
           --build-arg GIT_COMMIT={{.GIT_COMMIT}} \
           --build-arg BUILD_TIME={{.BUILD_TIME}} \
+          --cache-to type=inline \
           -t {{.DOCKER_HUB_IMAGE}}:{{.VERSION}} \
           -t {{.DOCKER_HUB_IMAGE}}:latest \
           --load \
@@ -132,14 +134,22 @@ tasks:
     cmds:
       - |
         docker buildx build \
+          --builder rmm-builder \
           --platform linux/amd64,linux/arm64 \
           --build-arg VERSION={{.VERSION}} \
           --build-arg GIT_COMMIT={{.GIT_COMMIT}} \
           --build-arg BUILD_TIME={{.BUILD_TIME}} \
+          --cache-from type=registry,ref={{.DOCKER_HUB_IMAGE}}:buildcache \
+          --cache-to type=registry,ref={{.DOCKER_HUB_IMAGE}}:buildcache,mode=max \
           -t {{.DOCKER_HUB_IMAGE}}:{{.VERSION}} \
           -t {{.DOCKER_HUB_IMAGE}}:latest \
           --push \
           .
+
+  docker:cache:clear:
+    desc: Clear Docker build cache
+    cmds:
+      - docker buildx prune --builder rmm-builder -f
 
   # ── Development ────────────────────────────────────────
 
