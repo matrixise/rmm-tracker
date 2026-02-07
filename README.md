@@ -101,6 +101,7 @@ DATABASE_URL="..." ./rmm-tracker validate-config
 
 ### Docker Deployment
 
+**Using Docker Compose:**
 ```bash
 # Start PostgreSQL and run app once
 docker compose up
@@ -111,6 +112,20 @@ docker compose logs -f app
 
 # Stop services
 docker compose down
+```
+
+**Using Task (recommended):**
+```bash
+task docker:up                 # Start all services
+task docker:logs               # Follow application logs
+task docker:down               # Stop all services
+```
+
+**Pull from Docker Hub:**
+```bash
+# Multi-arch images available (amd64 + arm64)
+docker pull matrixise/rmm-tracker:latest
+docker pull matrixise/rmm-tracker:v1.0.0  # Specific version
 ```
 
 ## Commands
@@ -263,23 +278,77 @@ If upgrading from the original monolithic version, see [`docs/MIGRATION.md`](doc
 
 ## Development
 
+This project uses [Task](https://taskfile.dev/) for build automation. Run `task --list` to see all available tasks.
+
+### Common Tasks
+
 ```bash
-# Install dependencies
-go mod download
+# Build
+task build                     # Build binary with version info
 
-# Run tests
-go test ./...
+# Testing
+task test                      # Run all tests
+task test:coverage:html        # Coverage report in browser
 
-# Run linter
-golangci-lint run
+# Database
+task migrate:up                # Apply migrations
+task migrate:status            # Check migration state
 
-# Build with version info
+# Docker (local)
+task docker:up                 # Start PostgreSQL + app
+task docker:logs               # Follow logs
+task docker:buildx:build       # Build linux/amd64 image locally
+task docker:buildx:push        # Build multi-arch (amd64+arm64) and push to Docker Hub
+task docker:cache:clear        # Clear Docker build cache
+
+# Development
+task run                       # Run tracker once
+task run:daemon                # Run in daemon mode (5m interval)
+task clean                     # Remove build artifacts
+```
+
+### Multi-Architecture Docker Builds
+
+The project supports building Docker images for multiple architectures using buildx:
+
+```bash
+# Build for local testing (linux/amd64 only, loaded into Docker)
+task docker:buildx:build
+
+# Build and push multi-arch images (linux/amd64 + linux/arm64)
+task docker:buildx:push
+```
+
+**Build Cache Optimization:**
+- Local builds use inline cache for faster rebuilds
+- Push builds use Docker Hub registry cache (`:buildcache` tag)
+- Cache is shared between local builds and CI/CD
+- Go modules and build artifacts are cached in Docker layers
+
+### Manual Build with Version Info
+
+```bash
 go build -ldflags "\
   -X github.com/matrixise/rmm-tracker/cmd.Version=1.0.0 \
   -X github.com/matrixise/rmm-tracker/cmd.GitCommit=$(git rev-parse HEAD) \
   -X github.com/matrixise/rmm-tracker/cmd.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   -o rmm-tracker .
 ```
+
+## CI/CD
+
+The project uses GitHub Actions for continuous integration and deployment:
+
+- **Multi-arch Docker builds**: Automatically builds for `linux/amd64` and `linux/arm64`
+- **Docker Hub publishing**: Pushes images on tags (`v*`) and main branch commits
+- **Automatic README sync**: Docker Hub description is automatically updated from this README
+- **Build cache**: Uses Docker Hub registry cache for faster builds
+
+**Image tags:**
+- `latest`: Latest commit on main branch
+- `v1.0.0`: Semantic version tags
+- `main`: Main branch (same as latest)
+- `<git-sha>`: Specific commit SHA
 
 ## Documentation
 
