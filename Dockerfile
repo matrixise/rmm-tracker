@@ -42,6 +42,5 @@ RUN apk --no-cache add ca-certificates curl
 WORKDIR /app
 
 COPY --from=builder /app/rmm-tracker .
-COPY config.toml .
 
 ENTRYPOINT ["./rmm-tracker", "run"]
