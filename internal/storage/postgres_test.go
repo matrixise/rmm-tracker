@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +24,7 @@ func TestTokenBalanceValidation(t *testing.T) {
 				Symbol:       "TEST",
 				Decimals:     18,
 				RawBalance:   big.NewInt(1000000000000000000),
-				Balance:      "1",
+				Balance:      decimal.NewFromInt(1),
 			},
 			valid: true,
 		},
@@ -36,7 +37,7 @@ func TestTokenBalanceValidation(t *testing.T) {
 				Symbol:       "TEST",
 				Decimals:     6,
 				RawBalance:   big.NewInt(0),
-				Balance:      "0",
+				Balance:      decimal.Zero,
 			},
 			valid: true,
 		},
@@ -52,7 +53,7 @@ func TestTokenBalanceValidation(t *testing.T) {
 					v, _ := big.NewInt(0).SetString("999999999999999999999999999", 10)
 					return v
 				}(),
-				Balance: "999999999999999999.999999999",
+				Balance: decimal.RequireFromString("999999999999999999.999999999"),
 			},
 			valid: true,
 		},
@@ -81,7 +82,7 @@ func TestBatchInsertBalancesDataTypes(t *testing.T) {
 				Symbol:       "TEST1",
 				Decimals:     18,
 				RawBalance:   big.NewInt(1000000000000000000),
-				Balance:      "1",
+				Balance:      decimal.NewFromInt(1),
 			},
 			{
 				QueriedAt:    time.Now().Add(-1 * time.Hour),
@@ -90,7 +91,7 @@ func TestBatchInsertBalancesDataTypes(t *testing.T) {
 				Symbol:       "TEST2",
 				Decimals:     6,
 				RawBalance:   big.NewInt(500000),
-				Balance:      "0.5",
+				Balance:      decimal.NewFromFloat(0.5),
 			},
 		}
 
@@ -113,7 +114,7 @@ func TestBatchInsertBalancesDataTypes(t *testing.T) {
 				Symbol:       "SINGLE",
 				Decimals:     18,
 				RawBalance:   big.NewInt(0),
-				Balance:      "0",
+				Balance:      decimal.Zero,
 			},
 		}
 
@@ -204,7 +205,7 @@ func TestTokenBalanceFieldRequirements(t *testing.T) {
 			Symbol:       "TEST",
 			Decimals:     18,
 			RawBalance:   big.NewInt(1000000000000000000),
-			Balance:      "1",
+			Balance:      decimal.NewFromInt(1),
 		}
 
 		// Verify all required fields are present
@@ -218,14 +219,14 @@ func TestTokenBalanceFieldRequirements(t *testing.T) {
 
 	t.Run("balance field stores decimal representation", func(t *testing.T) {
 		balances := []TokenBalance{
-			{Balance: "0"},
-			{Balance: "1.5"},
-			{Balance: "0.000000000000000001"},
-			{Balance: "123456789.123456789"},
+			{Balance: decimal.Zero},
+			{Balance: decimal.NewFromFloat(1.5)},
+			{Balance: decimal.RequireFromString("0.000000000000000001")},
+			{Balance: decimal.RequireFromString("123456789.123456789")},
 		}
 
 		for _, b := range balances {
-			assert.NotEmpty(t, b.Balance)
+			assert.False(t, b.Balance.IsZero() && b.Balance.String() != "0")
 		}
 	})
 }
@@ -236,17 +237,17 @@ func TestTokenBalanceBatchOperations(t *testing.T) {
 			{
 				Symbol:   "USDC",
 				Decimals: 6,
-				Balance:  "1000.50",
+				Balance:  decimal.NewFromFloat(1000.50),
 			},
 			{
 				Symbol:   "DAI",
 				Decimals: 18,
-				Balance:  "2500.123456789012345678",
+				Balance:  decimal.RequireFromString("2500.123456789012345678"),
 			},
 			{
 				Symbol:   "USDT",
 				Decimals: 6,
-				Balance:  "0.01",
+				Balance:  decimal.NewFromFloat(0.01),
 			},
 		}
 
@@ -258,9 +259,9 @@ func TestTokenBalanceBatchOperations(t *testing.T) {
 
 	t.Run("batch preserves insertion order", func(t *testing.T) {
 		balances := []TokenBalance{
-			{Symbol: "FIRST", Balance: "1"},
-			{Symbol: "SECOND", Balance: "2"},
-			{Symbol: "THIRD", Balance: "3"},
+			{Symbol: "FIRST", Balance: decimal.NewFromInt(1)},
+			{Symbol: "SECOND", Balance: decimal.NewFromInt(2)},
+			{Symbol: "THIRD", Balance: decimal.NewFromInt(3)},
 		}
 
 		assert.Equal(t, "FIRST", balances[0].Symbol)

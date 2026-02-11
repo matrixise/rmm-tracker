@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	shop "github.com/jackc/pgx-shopspring-decimal"
 )
 
 // Store manages PostgreSQL operations
@@ -27,6 +28,12 @@ func NewStore(ctx context.Context, dsn string) (*Store, error) {
 	config.MinConns = 2
 	config.MaxConnLifetime = 1 * time.Hour
 	config.MaxConnIdleTime = 30 * time.Minute
+
+	// Register decimal.Decimal type mapping
+	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		shop.Register(conn.TypeMap())
+		return nil
+	}
 
 	// Create pool
 	pool, err := pgxpool.NewWithConfig(ctx, config)

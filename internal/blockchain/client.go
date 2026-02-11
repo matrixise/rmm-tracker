@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -102,21 +103,13 @@ func (c *Client) retryWithBackoff(ctx context.Context, fn func() error) error {
 	return fmt.Errorf("failed after %d retries: %w", maxRetries, lastErr)
 }
 
-// HumanBalance converts raw balance to human-readable decimal string
-func HumanBalance(rawBalance *big.Int, decimals uint8) string {
+// HumanBalance converts raw balance to human-readable decimal
+func HumanBalance(rawBalance *big.Int, decimals uint8) decimal.Decimal {
 	if rawBalance.Sign() == 0 {
-		return "0"
-	}
-	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
-
-	intPart := new(big.Int).Div(rawBalance, divisor)
-	remainder := new(big.Int).Mod(rawBalance, divisor)
-
-	if remainder.Sign() == 0 {
-		return intPart.String()
+		return decimal.Zero
 	}
 
-	fracStr := fmt.Sprintf("%0*s", int(decimals), remainder.String())
-	fracStr = strings.TrimRight(fracStr, "0")
-	return fmt.Sprintf("%s.%s", intPart.String(), fracStr)
+	// Use NewFromBigInt with negative exponent to represent division by 10^decimals
+	// This is equivalent to rawBalance / 10^decimals
+	return decimal.NewFromBigInt(rawBalance, -int32(decimals))
 }

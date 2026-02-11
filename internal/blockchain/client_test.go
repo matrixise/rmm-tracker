@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,7 +89,8 @@ func TestHumanBalance(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := HumanBalance(tt.raw, tt.decimals)
-			assert.Equal(t, tt.want, got)
+			expected := decimal.RequireFromString(tt.want)
+			assert.True(t, expected.Equal(got), "expected %s, got %s", tt.want, got.String())
 		})
 	}
 }
@@ -98,28 +100,32 @@ func TestBalanceCalculationEdgeCases(t *testing.T) {
 		raw, _ := big.NewInt(0).SetString("123456789123456789", 10)
 		decimals := uint8(18)
 		result := HumanBalance(raw, decimals)
-		assert.Equal(t, "0.123456789123456789", result)
+		expected := decimal.RequireFromString("0.123456789123456789")
+		assert.True(t, expected.Equal(result))
 	})
 
 	t.Run("balance at decimal boundary", func(t *testing.T) {
 		raw, _ := big.NewInt(0).SetString("1000000000000000000", 10)
 		decimals := uint8(18)
 		result := HumanBalance(raw, decimals)
-		assert.Equal(t, "1", result)
+		expected := decimal.NewFromInt(1)
+		assert.True(t, expected.Equal(result))
 	})
 
 	t.Run("very small balance", func(t *testing.T) {
 		raw := big.NewInt(1)
 		decimals := uint8(18)
 		result := HumanBalance(raw, decimals)
-		assert.Equal(t, "0.000000000000000001", result)
+		expected := decimal.RequireFromString("0.000000000000000001")
+		assert.True(t, expected.Equal(result))
 	})
 
 	t.Run("large balance with small decimals", func(t *testing.T) {
 		raw, _ := big.NewInt(0).SetString("999999999999999999", 10)
 		decimals := uint8(6)
 		result := HumanBalance(raw, decimals)
-		assert.Equal(t, "999999999999.999999", result)
+		expected := decimal.RequireFromString("999999999999.999999")
+		assert.True(t, expected.Equal(result))
 	})
 
 	t.Run("negative balance (edge case)", func(t *testing.T) {
@@ -201,7 +207,8 @@ func TestHumanBalanceWithRealWorldNumbers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := HumanBalance(tt.raw, tt.decimals)
-			assert.Equal(t, tt.expected, result, tt.description)
+			expected := decimal.RequireFromString(tt.expected)
+			assert.True(t, expected.Equal(result), tt.description)
 		})
 	}
 }
