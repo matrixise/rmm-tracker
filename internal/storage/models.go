@@ -3,6 +3,8 @@ package storage
 import (
 	"math/big"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // TokenBalance represents a token balance record
@@ -14,5 +16,5 @@ type TokenBalance struct {
 	Symbol       string
 	Decimals     uint8
 	RawBalance   *big.Int
-	Balance      string
+	Balance      decimal.Decimal
 }

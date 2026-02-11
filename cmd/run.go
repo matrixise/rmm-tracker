@@ -247,7 +247,7 @@ func processAllWallets(ctx context.Context, cfg *config.Config, client *blockcha
 				slog.Info("Balance retrieved",
 					"wallet", result.Wallet,
 					"symbol", result.Symbol,
-					"balance", result.Balance,
+					"balance", result.Balance.String(),
 					"decimals", result.Decimals,
 				)
 
