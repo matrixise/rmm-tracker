@@ -97,7 +97,7 @@ func TestIntegration_InsertAndGetBalances(t *testing.T) {
 	require.Equal(t, tokenAddress1, got[0].TokenAddress)
 	require.Equal(t, uint8(18), got[0].Decimals)
 	require.True(t, got[0].Balance.Equal(decimal.NewFromFloat(1.5)))
-	require.Equal(t, t1, got[0].QueriedAt)
+	require.True(t, t1.Equal(got[0].QueriedAt), "QueriedAt should match: expected %v, got %v", t1, got[0].QueriedAt)
 
 	// Filter by wallet + symbol
 	got, err = store.GetBalances(ctx, wallet, "armmUSDC", 100)
