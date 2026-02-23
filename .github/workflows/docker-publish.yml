@@ -1,41 +1,25 @@
 name: Build and Publish Docker Image
 
 on:
-  push:
-    branches: [main]
-    tags: ["v*"]
+  workflow_run:
+    workflows: ["Test"]
+    types: [completed]
 
 env:
   DOCKERHUB_IMAGE: matrixise/rmm-tracker
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Build
-        run: go build ./...
-
-      - name: Test
-        run: go test -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
-
-      - name: Coverage summary
-        run: go tool cover -func=coverage.out
-
   build-and-push:
-    needs: test
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.head_branch == 'main' ||
+       startsWith(github.event.workflow_run.head_branch, 'v'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -71,9 +55,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VERSION=${{ github.ref_name }}
-            GIT_COMMIT=${{ github.sha }}
-            BUILD_TIME=${{ github.event.head_commit.timestamp }}
+            VERSION=${{ github.event.workflow_run.head_branch }}
+            GIT_COMMIT=${{ github.event.workflow_run.head_sha }}
+            BUILD_TIME=${{ github.event.workflow_run.updated_at }}
 
       - name: Update Docker Hub description
         uses: peter-evans/dockerhub-description@v4
