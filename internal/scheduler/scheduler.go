@@ -98,9 +98,9 @@ func NewScheduler(ctx context.Context, cfg Config, jobFunc JobFunc) (*Scheduler,
 		)
 	} else {
 		// Convert duration to clock-aligned cron expression
-		cronExpr, err := durationToCron(cfg.Interval)
-		if err != nil {
-			return nil, fmt.Errorf("invalid interval: %w", err)
+		cronExpr, cronErr := durationToCron(cfg.Interval)
+		if cronErr != nil {
+			return nil, fmt.Errorf("invalid interval: %w", cronErr)
 		}
 
 		s.logger.Info("Converting duration to cron", "duration", cfg.Interval, "cron", cronExpr, "timezone", cfg.Timezone.String())
@@ -196,9 +196,10 @@ func isCronExpression(s string) bool {
 
 // durationToCron converts a duration string to a clock-aligned cron expression
 // Examples:
-//   "5m" -> "*/5 * * * *"
-//   "1h" -> "0 */1 * * *"
-//   "30s" -> "*/30 * * * * *"
+//
+//	"5m" -> "*/5 * * * *"
+//	"1h" -> "0 */1 * * *"
+//	"30s" -> "*/30 * * * * *"
 func durationToCron(durationStr string) (string, error) {
 	duration, err := time.ParseDuration(durationStr)
 	if err != nil {

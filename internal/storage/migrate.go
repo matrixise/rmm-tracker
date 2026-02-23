@@ -21,7 +21,7 @@ func RunMigrations(ctx context.Context, dsn string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open database for migrations: %w", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	goose.SetBaseFS(migrations)
 
@@ -42,7 +42,7 @@ func MigrateDown(ctx context.Context, dsn string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open database for migrations: %w", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	goose.SetBaseFS(migrations)
 
@@ -63,7 +63,7 @@ func MigrateStatus(ctx context.Context, dsn string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open database for migrations: %w", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	goose.SetBaseFS(migrations)
 

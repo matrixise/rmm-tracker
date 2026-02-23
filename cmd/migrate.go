@@ -44,7 +44,9 @@ func init() {
 
 func getDatabaseURL() (string, error) {
 	v := viper.New()
-	v.BindEnv("database_url", "DATABASE_URL")
+	if err := v.BindEnv("database_url", "DATABASE_URL"); err != nil {
+		return "", fmt.Errorf("failed to bind env: %w", err)
+	}
 	dsn := v.GetString("database_url")
 	if dsn == "" {
 		return "", fmt.Errorf("DATABASE_URL is required")

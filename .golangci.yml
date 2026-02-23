@@ -1,3 +1,5 @@
+version: "2"
+
 run:
   timeout: 5m
   tests: true
@@ -5,32 +7,33 @@ run:
 linters:
   enable:
     - errcheck      # Vérifie les erreurs non traitées
-    - gosimple      # Simplifie le code
     - govet         # Examine le code
     - ineffassign   # Détecte les assignations inutiles
-    - staticcheck   # Analyse statique avancée
+    - staticcheck   # Analyse statique avancée (inclut gosimple en v2)
     - unused        # Détecte le code non utilisé
-    - gofmt         # Vérifie le formatage
     - misspell      # Détecte les fautes d'orthographe
     - revive        # Remplaçant rapide de golint
     - gosec         # Vérifie les problèmes de sécurité
     - unconvert     # Détecte les conversions inutiles
 
-linters-settings:
-  errcheck:
-    check-blank: true
-    check-type-assertions: false
+  settings:
+    errcheck:
+      check-blank: false   # allow _ = f() for intentional discards (e.g. deferred Close)
+      check-type-assertions: false
 
-  revive:
-    rules:
-      - name: exported
-        disabled: true  # Pas besoin de commenter tous les exports
+    revive:
+      rules:
+        - name: exported
+          disabled: true  # Pas besoin de commenter tous les exports
 
-  gosec:
-    excludes:
-      - G404  # Utilisation de math/rand au lieu de crypto/rand (acceptable pour non-crypto)
+    gosec:
+      excludes:
+        - G404  # Utilisation de math/rand au lieu de crypto/rand (acceptable pour non-crypto)
 
-issues:
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
+  exclusions:
+    presets: []
+    generated: lax
+
+formatters:
+  enable:
+    - gofmt         # Vérifie le formatage

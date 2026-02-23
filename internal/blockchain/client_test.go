@@ -176,7 +176,7 @@ func TestHumanBalanceWithRealWorldNumbers(t *testing.T) {
 			expected:    "1000",
 		},
 		{
-			name: "DAI with fractional amount",
+			name:        "DAI with fractional amount",
 			description: "123.456 DAI (18 decimals)",
 			raw: func() *big.Int {
 				v, _ := big.NewInt(0).SetString("123456000000000000000", 10)
@@ -193,7 +193,7 @@ func TestHumanBalanceWithRealWorldNumbers(t *testing.T) {
 			expected:    "0.5",
 		},
 		{
-			name: "ETH with wei",
+			name:        "ETH with wei",
 			description: "2.5 ETH (18 decimals)",
 			raw: func() *big.Int {
 				v, _ := big.NewInt(0).SetString("2500000000000000000", 10)

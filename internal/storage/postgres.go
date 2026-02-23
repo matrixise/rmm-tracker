@@ -3,13 +3,11 @@ package storage
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
+	shop "github.com/jackc/pgx-shopspring-decimal"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	shop "github.com/jackc/pgx-shopspring-decimal"
-	"github.com/shopspring/decimal"
 )
 
 // Store manages PostgreSQL operations
@@ -83,7 +81,7 @@ func (s *Store) BatchInsertBalances(ctx context.Context, balances []TokenBalance
 
 	// Execute batch
 	br := s.pool.SendBatch(ctx, batch)
-	defer br.Close()
+	defer func() { _ = br.Close() }()
 
 	// Check for errors
 	for range balances {
@@ -201,98 +199,24 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) (
 	defer rows.Close()
 
 	// Group rows by symbol: first row = current week, last = oldest week
-	type row struct {
-		symbol       string
-		tokenAddress string
-		weekBucket   time.Time
-		balance      decimal.Decimal
-	}
-
-	bySymbol := make(map[string][]row)
+	bySymbol := make(map[string][]weekEntry)
 	symbolOrder := []string{}
 
 	for rows.Next() {
-		var r row
-		if err := rows.Scan(&r.symbol, &r.tokenAddress, &r.weekBucket, &r.balance); err != nil {
+		var e weekEntry
+		if err := rows.Scan(&e.symbol, &e.tokenAddress, &e.weekBucket, &e.balance); err != nil {
 			return nil, fmt.Errorf("scan failed: %w", err)
 		}
-		if _, seen := bySymbol[r.symbol]; !seen {
-			symbolOrder = append(symbolOrder, r.symbol)
+		if _, seen := bySymbol[e.symbol]; !seen {
+			symbolOrder = append(symbolOrder, e.symbol)
 		}
-		bySymbol[r.symbol] = append(bySymbol[r.symbol], r)
+		bySymbol[e.symbol] = append(bySymbol[e.symbol], e)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	hundred     := decimal.NewFromInt(100)
-	one         := decimal.NewFromInt(1)
-	daysPerYear := decimal.NewFromInt(365)
-
-	var results []WeeklyReport
-	for _, sym := range symbolOrder {
-		entries := bySymbol[sym]
-		if len(entries) == 0 {
-			continue
-		}
-		current := entries[0].balance
-		var previous decimal.Decimal
-		if len(entries) >= 2 {
-			previous = entries[len(entries)-1].balance
-		}
-
-		change := current.Sub(previous)
-
-		var changePercent decimal.Decimal
-		if !previous.IsZero() {
-			changePercent = change.Div(previous).Mul(hundred)
-		}
-
-		// Bug fix: use the actual elapsed days between oldest and newest buckets,
-		// not the theoretical 7*(weeks-1). Handles the case where fewer weeks exist
-		// in the DB than requested.
-		var actualDays decimal.Decimal
-		if len(entries) >= 2 {
-			d := entries[0].weekBucket.Sub(entries[len(entries)-1].weekBucket).Hours() / 24
-			actualDays = decimal.NewFromFloat(d)
-		}
-
-		var dailyAvg decimal.Decimal
-		if actualDays.IsPositive() {
-			dailyAvg = change.Div(actualDays)
-		}
-
-		var apy decimal.Decimal
-		if !previous.IsZero() && actualDays.IsPositive() {
-			// APY = (1 + change/previous)^(365/actualDays) - 1
-			ratio, _ := one.Add(change.Div(previous)).Float64()
-			// Bug fix: math.Pow(negative, non-integer) returns NaN — guard against it.
-			if ratio > 0 {
-				exponent, _ := daysPerYear.Div(actualDays).Float64()
-				apy = decimal.NewFromFloat(math.Pow(ratio, exponent)-1).Mul(hundred)
-			}
-		}
-
-		// Bug fix: week_start is the oldest bucket (start of the comparison period),
-		// week_end is the end of the most recent week (newest bucket + 7 days).
-		weekStart := entries[len(entries)-1].weekBucket
-		weekEnd   := entries[0].weekBucket.Add(7 * 24 * time.Hour)
-
-		results = append(results, WeeklyReport{
-			Symbol:          sym,
-			TokenAddress:    entries[0].tokenAddress,
-			WeekStart:       weekStart,
-			WeekEnd:         weekEnd,
-			CurrentBalance:  current,
-			PreviousBalance: previous,
-			Change:          change,
-			ChangePercent:   changePercent,
-			DailyAvgChange:  dailyAvg,
-			APY:             apy,
-		})
-	}
-
-	return results, nil
+	return computeWeeklyReport(symbolOrder, bySymbol), nil
 }
 
 // GetWallets returns distinct wallet addresses stored in the database.

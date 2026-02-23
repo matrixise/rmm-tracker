@@ -65,7 +65,8 @@ func (c *Client) retryWithBackoff(ctx context.Context, fn func() error) error {
 
 	for attempt := range maxRetries {
 		if attempt > 0 {
-			backoff := retryInterval * time.Duration(1<<uint(attempt-1))
+			shift := uint(attempt - 1) //nolint:gosec // attempt > 0 here, so attempt-1 >= 0
+			backoff := retryInterval << shift
 			select {
 			case <-time.After(backoff):
 			case <-ctx.Done():
@@ -74,7 +75,7 @@ func (c *Client) retryWithBackoff(ctx context.Context, fn func() error) error {
 		}
 
 		// Get current RPC URL
-		_, currentURL, _ = c.failoverClient.GetClient()
+		_, currentURL, _ = c.failoverClient.GetClient() //nolint:errcheck // best-effort URL refresh; error handled via MarkUnhealthy
 
 		if err := fn(); err != nil {
 			lastErr = err
