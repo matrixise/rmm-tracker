@@ -53,3 +53,35 @@ jobs:
           name: coverage-report
           path: coverage.out
           retention-days: 7
+
+  integration-test:
+    needs: test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rmm
+          POSTGRES_PASSWORD: rmm
+          POSTGRES_DB: rmm_tracker
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgres://rmm:rmm@localhost:5432/rmm_tracker?sslmode=disable
+        run: go test -v -tags integration -timeout 60s ./...
