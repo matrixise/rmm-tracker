@@ -134,10 +134,12 @@ func (s *Store) GetBalances(ctx context.Context, wallet, symbol string, limit in
 
 // GetWeeklyBalances returns the last recorded balance per (week, symbol) for a wallet,
 // ordered by week descending.
+// Uses the stored week_bucket column + idx_token_balances_wallet_wbucket_symbol to avoid
+// a full sort on DATE_TRUNC.
 func (s *Store) GetWeeklyBalances(ctx context.Context, wallet string) ([]WeeklyBalance, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT DISTINCT ON (DATE_TRUNC('week', queried_at), symbol)
-			DATE_TRUNC('week', queried_at) AS week,
+		SELECT DISTINCT ON (week_bucket, symbol)
+			week_bucket AS week,
 			wallet,
 			token_address,
 			symbol,
@@ -146,7 +148,7 @@ func (s *Store) GetWeeklyBalances(ctx context.Context, wallet string) ([]WeeklyB
 			queried_at
 		FROM token_balances
 		WHERE wallet = $1
-		ORDER BY DATE_TRUNC('week', queried_at) DESC, symbol, queried_at DESC`,
+		ORDER BY week_bucket DESC, symbol, queried_at DESC`,
 		wallet,
 	)
 	if err != nil {
@@ -171,12 +173,12 @@ func (s *Store) GetWeeklyBalances(ctx context.Context, wallet string) ([]WeeklyB
 func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) ([]WeeklyReport, error) {
 	rows, err := s.pool.Query(ctx, `
 		WITH ranked AS (
-			SELECT DISTINCT ON (DATE_TRUNC('week', queried_at), symbol)
-				DATE_TRUNC('week', queried_at) AS week_bucket,
+			SELECT DISTINCT ON (week_bucket, symbol)
+				week_bucket,
 				symbol, token_address, balance
 			FROM token_balances
 			WHERE wallet = $1
-			ORDER BY DATE_TRUNC('week', queried_at) DESC, symbol, queried_at DESC
+			ORDER BY week_bucket DESC, symbol, queried_at DESC
 		),
 		recent_weeks AS (
 			SELECT week_bucket FROM ranked
