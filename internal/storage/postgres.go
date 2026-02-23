@@ -169,8 +169,11 @@ func (s *Store) GetWeeklyBalances(ctx context.Context, wallet string) ([]WeeklyB
 }
 
 // GetWeeklyReport returns per-token balance comparison between current and N-1 previous weeks for a wallet.
-// weeks must be >= 2.
+// weeks must be >= 2 and <= 52.
 func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) ([]WeeklyReport, error) {
+	if weeks < 2 {
+		return nil, fmt.Errorf("weeks must be >= 2")
+	}
 	rows, err := s.pool.Query(ctx, `
 		WITH ranked AS (
 			SELECT DISTINCT ON (week_bucket, symbol)
@@ -222,10 +225,8 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) (
 		return nil, err
 	}
 
-	days := decimal.NewFromInt(int64(7 * (weeks - 1)))
-	seven := decimal.NewFromInt(7)
-	hundred := decimal.NewFromInt(100)
-	one := decimal.NewFromInt(1)
+	hundred     := decimal.NewFromInt(100)
+	one         := decimal.NewFromInt(1)
 	daysPerYear := decimal.NewFromInt(365)
 
 	var results []WeeklyReport
@@ -247,19 +248,35 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) (
 			changePercent = change.Div(previous).Mul(hundred)
 		}
 
-		dailyAvg := change.Div(seven)
-
-		var apy decimal.Decimal
-		if !previous.IsZero() && days.IsPositive() {
-			// APY = (1 + change/previous)^(365/days) - 1
-			ratio, _ := one.Add(change.Div(previous)).Float64()
-			exponent, _ := daysPerYear.Div(days).Float64()
-			apyFloat := math.Pow(ratio, exponent) - 1
-			apy = decimal.NewFromFloat(apyFloat).Mul(hundred)
+		// Bug fix: use the actual elapsed days between oldest and newest buckets,
+		// not the theoretical 7*(weeks-1). Handles the case where fewer weeks exist
+		// in the DB than requested.
+		var actualDays decimal.Decimal
+		if len(entries) >= 2 {
+			d := entries[0].weekBucket.Sub(entries[len(entries)-1].weekBucket).Hours() / 24
+			actualDays = decimal.NewFromFloat(d)
 		}
 
-		weekStart := entries[0].weekBucket
-		weekEnd := weekStart.Add(time.Duration(7*(weeks-1)) * 24 * time.Hour)
+		var dailyAvg decimal.Decimal
+		if actualDays.IsPositive() {
+			dailyAvg = change.Div(actualDays)
+		}
+
+		var apy decimal.Decimal
+		if !previous.IsZero() && actualDays.IsPositive() {
+			// APY = (1 + change/previous)^(365/actualDays) - 1
+			ratio, _ := one.Add(change.Div(previous)).Float64()
+			// Bug fix: math.Pow(negative, non-integer) returns NaN — guard against it.
+			if ratio > 0 {
+				exponent, _ := daysPerYear.Div(actualDays).Float64()
+				apy = decimal.NewFromFloat(math.Pow(ratio, exponent)-1).Mul(hundred)
+			}
+		}
+
+		// Bug fix: week_start is the oldest bucket (start of the comparison period),
+		// week_end is the end of the most recent week (newest bucket + 7 days).
+		weekStart := entries[len(entries)-1].weekBucket
+		weekEnd   := entries[0].weekBucket.Add(7 * 24 * time.Hour)
 
 		results = append(results, WeeklyReport{
 			Symbol:          sym,

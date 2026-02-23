@@ -91,8 +91,8 @@ func (h *Handler) GetWeeklyReport(w http.ResponseWriter, r *http.Request) {
 	weeks := 2
 	if weeksStr := r.URL.Query().Get("weeks"); weeksStr != "" {
 		v, err := strconv.Atoi(weeksStr)
-		if err != nil || v < 2 {
-			http.Error(w, "weeks must be an integer >= 2", http.StatusBadRequest)
+		if err != nil || v < 2 || v > 52 {
+			http.Error(w, "weeks must be an integer between 2 and 52", http.StatusBadRequest)
 			return
 		}
 		weeks = v
