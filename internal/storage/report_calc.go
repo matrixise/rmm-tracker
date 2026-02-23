@@ -20,8 +20,8 @@ type weekEntry struct {
 // bySymbol maps symbol → []weekEntry ordered week_bucket DESC (entries[0] = current week).
 // symbolOrder preserves the original query ordering.
 func computeWeeklyReport(symbolOrder []string, bySymbol map[string][]weekEntry) []WeeklyReport {
-	hundred     := decimal.NewFromInt(100)
-	one         := decimal.NewFromInt(1)
+	hundred := decimal.NewFromInt(100)
+	one := decimal.NewFromInt(1)
 	daysPerYear := decimal.NewFromInt(365)
 
 	var results []WeeklyReport
@@ -73,14 +73,14 @@ func computeWeeklyReport(symbolOrder []string, bySymbol map[string][]weekEntry) 
 			ratio, _ := one.Add(change.Div(previous)).Float64()
 			if ratio > 0 {
 				exponent, _ := daysPerYear.Div(actualDays).Float64()
-				apy = decimal.NewFromFloat(math.Pow(ratio, exponent)-1).Mul(hundred)
+				apy = decimal.NewFromFloat(math.Pow(ratio, exponent) - 1).Mul(hundred)
 			}
 		}
 
 		// week_start = beginning of the oldest week in the comparison period.
 		// week_end   = end of the current (most recent) week = newest bucket + 7 days.
 		weekStart := entries[len(entries)-1].weekBucket
-		weekEnd   := entries[0].weekBucket.Add(7 * 24 * time.Hour)
+		weekEnd := entries[0].weekBucket.Add(7 * 24 * time.Hour)
 
 		results = append(results, WeeklyReport{
 			Symbol:          sym,

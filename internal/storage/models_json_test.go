@@ -164,8 +164,7 @@ func TestWeeklyReport_JSONSnakeCase(t *testing.T) {
 
 func TestWeeklyReport_NilSlice_MarshaledAsEmptyArray(t *testing.T) {
 	// Handlers convert nil slice to empty slice — verify the JSON is "[]" not "null".
-	var reports []WeeklyReport
-	reports = []WeeklyReport{} // simulates handler behavior
+	reports := []WeeklyReport{} // simulates handler behavior
 
 	data, err := json.Marshal(reports)
 	require.NoError(t, err)

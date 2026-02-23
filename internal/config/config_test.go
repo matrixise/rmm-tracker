@@ -122,9 +122,9 @@ func TestConfigShouldRunImmediately(t *testing.T) {
 	falseVal := false
 
 	tests := []struct {
-		name     string
-		cfg      *Config
-		wantRun  bool
+		name    string
+		cfg     *Config
+		wantRun bool
 	}{
 		{
 			name: "true when explicitly set",

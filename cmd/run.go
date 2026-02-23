@@ -151,7 +151,7 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		slog.Error("Failed to create scheduler", "error", err)
 		return fmt.Errorf("scheduler creation failed: %w", err)
 	}
-	defer sched.Stop()
+	defer func() { _ = sched.Stop() }()
 
 	// Determine expected interval for health checker
 	expectedInterval, err := sched.GetExpectedInterval()
@@ -175,8 +175,9 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	router := api.NewRouter(healthChecker.Handler(), apiHandler)
 
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", httpPort),
-		Handler: router,
+		Addr:              fmt.Sprintf(":%d", httpPort),
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	go func() {

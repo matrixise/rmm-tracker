@@ -73,7 +73,7 @@ func TestComputeWeeklyReport_SingleEntry_NoHistory(t *testing.T) {
 }
 
 func TestComputeWeeklyReport_TwoWeeks_NormalGrowth(t *testing.T) {
-	current  := monday(2026, time.February, 23)
+	current := monday(2026, time.February, 23)
 	previous := monday(2026, time.February, 16)
 
 	bySymbol := map[string][]weekEntry{
@@ -151,7 +151,7 @@ func TestComputeWeeklyReport_FourWeeks_ActualDays21(t *testing.T) {
 
 func TestComputeWeeklyReport_FewerWeeksThanRequested(t *testing.T) {
 	// weeks=4 requested but only 2 weeks in DB — actualDays must be 7, not 21.
-	current  := monday(2026, time.February, 23)
+	current := monday(2026, time.February, 23)
 	previous := monday(2026, time.February, 16)
 
 	bySymbol := map[string][]weekEntry{
@@ -171,7 +171,7 @@ func TestComputeWeeklyReport_FewerWeeksThanRequested(t *testing.T) {
 }
 
 func TestComputeWeeklyReport_NegativeChange(t *testing.T) {
-	current  := monday(2026, time.February, 23)
+	current := monday(2026, time.February, 23)
 	previous := monday(2026, time.February, 16)
 
 	bySymbol := map[string][]weekEntry{
@@ -196,7 +196,7 @@ func TestComputeWeeklyReport_NegativeChange(t *testing.T) {
 
 func TestComputeWeeklyReport_APY_NegativeRatioGuard(t *testing.T) {
 	// Balance drops by more than 100% → ratio <= 0 → APY must be zero (NaN guard).
-	current  := monday(2026, time.February, 23)
+	current := monday(2026, time.February, 23)
 	previous := monday(2026, time.February, 16)
 
 	bySymbol := map[string][]weekEntry{
@@ -217,7 +217,7 @@ func TestComputeWeeklyReport_APY_NegativeRatioGuard(t *testing.T) {
 func TestComputeWeeklyReport_ZeroPreviousBalance(t *testing.T) {
 	// previous = 0: no APY, no change_percent, no daily_avg (actualDays = 0 not relevant,
 	// but previous.IsZero() guards APY and changePercent).
-	current  := monday(2026, time.February, 23)
+	current := monday(2026, time.February, 23)
 	previous := monday(2026, time.February, 16)
 
 	bySymbol := map[string][]weekEntry{

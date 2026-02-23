@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	shop "github.com/jackc/pgx-shopspring-decimal"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	shop "github.com/jackc/pgx-shopspring-decimal"
 )
 
 // Store manages PostgreSQL operations
@@ -81,7 +81,7 @@ func (s *Store) BatchInsertBalances(ctx context.Context, balances []TokenBalance
 
 	// Execute batch
 	br := s.pool.SendBatch(ctx, batch)
-	defer br.Close()
+	defer func() { _ = br.Close() }()
 
 	// Check for errors
 	for range balances {
@@ -199,7 +199,7 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) (
 	defer rows.Close()
 
 	// Group rows by symbol: first row = current week, last = oldest week
-	bySymbol    := make(map[string][]weekEntry)
+	bySymbol := make(map[string][]weekEntry)
 	symbolOrder := []string{}
 
 	for rows.Next() {

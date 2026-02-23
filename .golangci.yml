@@ -18,7 +18,7 @@ linters:
 
 linters-settings:
   errcheck:
-    check-blank: true
+    check-blank: false   # allow _ = f() for intentional discards (e.g. deferred Close)
     check-type-assertions: false
 
   revive:

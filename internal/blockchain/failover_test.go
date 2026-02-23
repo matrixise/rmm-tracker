@@ -44,20 +44,7 @@ func unhealthyEP(url string) *endpointStatus {
 	}
 }
 
-// expiredEP builds an unhealthy endpoint whose cooldown HAS expired.
-// GetClient will try to reconnect; we keep client nil so the Dial inside
-// GetClient will fail immediately and the endpoint stays unhealthy.
-func expiredEP(url string) *endpointStatus {
-	return &endpointStatus{
-		url:           url,
-		client:        nil,
-		healthy:       false,
-		lastError:     errors.New("connection refused"),
-		lastErrorTime: time.Now().Add(-2 * unhealthyDuration),
-	}
-}
-
-// --- GetEndpointsHealth ---
+//--- GetEndpointsHealth ---
 
 func TestGetEndpointsHealth_AllHealthy(t *testing.T) {
 	fc := buildFC([]*endpointStatus{

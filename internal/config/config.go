@@ -17,13 +17,13 @@ type Config struct {
 	// Legacy: Single endpoint (for backward compatibility)
 	RPCUrl string `mapstructure:"rpc_url" validate:"omitempty,url"`
 
-	Wallets         []string      `mapstructure:"wallets" validate:"required,min=1,dive,eth_addr"`
-	Tokens          []TokenConfig `mapstructure:"tokens" validate:"required,min=1,dive"`
-	Interval        string        `mapstructure:"interval" validate:"omitempty,schedule"`
-	LogLevel        string        `mapstructure:"log_level" validate:"omitempty,oneof=debug info warn error"`
-	HTTPPort        int           `mapstructure:"http_port" validate:"omitempty,min=1024,max=65535"`
-	RunImmediately  *bool         `mapstructure:"run_immediately"`
-	Timezone        string        `mapstructure:"timezone" validate:"omitempty,timezone"`
+	Wallets        []string      `mapstructure:"wallets" validate:"required,min=1,dive,eth_addr"`
+	Tokens         []TokenConfig `mapstructure:"tokens" validate:"required,min=1,dive"`
+	Interval       string        `mapstructure:"interval" validate:"omitempty,schedule"`
+	LogLevel       string        `mapstructure:"log_level" validate:"omitempty,oneof=debug info warn error"`
+	HTTPPort       int           `mapstructure:"http_port" validate:"omitempty,min=1024,max=65535"`
+	RunImmediately *bool         `mapstructure:"run_immediately"`
+	Timezone       string        `mapstructure:"timezone" validate:"omitempty,timezone"`
 }
 
 // Normalize converts single rpc_url to rpc_urls array for backward compatibility
@@ -87,13 +87,23 @@ func timezoneValidator(fl validator.FieldLevel) bool {
 	return err == nil
 }
 
-// NewValidator creates a validator with custom validation rules
+// NewValidator creates a validator with custom validation rules.
+// Panics if a validator tag name is invalid (programming error, not runtime error).
 func NewValidator() *validator.Validate {
 	validate := validator.New()
-	validate.RegisterValidation("eth_addr", ethAddressValidator)
-	validate.RegisterValidation("duration", durationValidator)
-	validate.RegisterValidation("schedule", scheduleValidator)
-	validate.RegisterValidation("timezone", timezoneValidator)
+	for _, rv := range []struct {
+		tag string
+		fn  validator.Func
+	}{
+		{"eth_addr", ethAddressValidator},
+		{"duration", durationValidator},
+		{"schedule", scheduleValidator},
+		{"timezone", timezoneValidator},
+	} {
+		if err := validate.RegisterValidation(rv.tag, rv.fn); err != nil {
+			panic("config: register validator " + rv.tag + ": " + err.Error())
+		}
+	}
 	return validate
 }
 

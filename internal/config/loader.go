@@ -13,7 +13,7 @@ func Load(configPath string) (*Config, error) {
 
 	// 1. Set defaults
 	v.SetDefault("log_level", "info")
-	v.SetDefault("interval", "")       // Run once by default
+	v.SetDefault("interval", "") // Run once by default
 	v.SetDefault("http_port", 8080)
 	v.SetDefault("run_immediately", true)
 	v.SetDefault("timezone", "UTC")
@@ -31,16 +31,22 @@ func Load(configPath string) (*Config, error) {
 	v.SetEnvPrefix("RMM_TRACKER")
 	v.AutomaticEnv()
 
-	// Map environment variables to config keys
-	// RMM_TRACKER_RPC_URL -> rpc_url
-	v.BindEnv("rpc_url", "RPC_URL")
-	v.BindEnv("rpc_urls", "RPC_URLS")
-	v.BindEnv("wallets", "WALLETS")
-	v.BindEnv("log_level", "LOG_LEVEL")
-	v.BindEnv("interval", "INTERVAL")
-	v.BindEnv("http_port", "HTTP_PORT")
-	v.BindEnv("run_immediately", "RUN_IMMEDIATELY")
-	v.BindEnv("timezone", "TIMEZONE")
+	// Map environment variables to config keys (RMM_TRACKER_* prefix is set above).
+	// BindEnv only fails for an empty key, which is a programming error — panic is appropriate.
+	for key, env := range map[string]string{
+		"rpc_url":         "RPC_URL",
+		"rpc_urls":        "RPC_URLS",
+		"wallets":         "WALLETS",
+		"log_level":       "LOG_LEVEL",
+		"interval":        "INTERVAL",
+		"http_port":       "HTTP_PORT",
+		"run_immediately": "RUN_IMMEDIATELY",
+		"timezone":        "TIMEZONE",
+	} {
+		if err := v.BindEnv(key, env); err != nil {
+			panic("config: bind env " + key + ": " + err.Error())
+		}
+	}
 
 	// 4. Read config file
 	if err := v.ReadInConfig(); err != nil {
@@ -101,7 +107,9 @@ func LoadWithDefaults(configPath string) (*Config, string, error) {
 
 	// DATABASE_URL is required
 	v := viper.New()
-	v.BindEnv("database_url", "DATABASE_URL")
+	if err := v.BindEnv("database_url", "DATABASE_URL"); err != nil {
+		panic("config: bind env database_url: " + err.Error())
+	}
 	databaseURL := v.GetString("database_url")
 
 	if databaseURL == "" {

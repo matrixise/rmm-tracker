@@ -24,7 +24,7 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
 		cfg, err := Load(configPath)
@@ -39,15 +39,15 @@ fallback_decimals = 18
 
 	t.Run("config from env vars only without config file", func(t *testing.T) {
 		// Set all required env vars including tokens
-		os.Setenv("RMM_TRACKER_RPC_URLS", "https://rpc.example.com")
-		os.Setenv("RMM_TRACKER_WALLETS", "0x1234567890123456789012345678901234567890")
-		defer os.Unsetenv("RMM_TRACKER_RPC_URLS")
-		defer os.Unsetenv("RMM_TRACKER_WALLETS")
+		require.NoError(t, os.Setenv("RMM_TRACKER_RPC_URLS", "https://rpc.example.com"))
+		require.NoError(t, os.Setenv("RMM_TRACKER_WALLETS", "0x1234567890123456789012345678901234567890"))
+		defer func() { _ = os.Unsetenv("RMM_TRACKER_RPC_URLS") }()
+		defer func() { _ = os.Unsetenv("RMM_TRACKER_WALLETS") }()
 
 		// Create empty config file (config file found but empty - should load from env vars)
 		tmpDir := t.TempDir()
 		emptyConfigPath := filepath.Join(tmpDir, "empty.toml")
-		err := os.WriteFile(emptyConfigPath, []byte(""), 0644)
+		err := os.WriteFile(emptyConfigPath, []byte(""), 0600)
 		require.NoError(t, err)
 
 		// Note: This will still fail validation because tokens array cannot be set via env vars
@@ -71,11 +71,11 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
-		os.Setenv("RMM_TRACKER_LOG_LEVEL", "debug")
-		defer os.Unsetenv("RMM_TRACKER_LOG_LEVEL")
+		require.NoError(t, os.Setenv("RMM_TRACKER_LOG_LEVEL", "debug"))
+		defer func() { _ = os.Unsetenv("RMM_TRACKER_LOG_LEVEL") }()
 
 		cfg, err := Load(configPath)
 		require.NoError(t, err)
@@ -95,11 +95,11 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
-		os.Setenv("RMM_TRACKER_WALLETS", "0x1111111111111111111111111111111111111111, 0x2222222222222222222222222222222222222222")
-		defer os.Unsetenv("RMM_TRACKER_WALLETS")
+		require.NoError(t, os.Setenv("RMM_TRACKER_WALLETS", "0x1111111111111111111111111111111111111111, 0x2222222222222222222222222222222222222222"))
+		defer func() { _ = os.Unsetenv("RMM_TRACKER_WALLETS") }()
 
 		cfg, err := Load(configPath)
 		require.NoError(t, err)
@@ -121,11 +121,11 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
-		os.Setenv("RMM_TRACKER_RPC_URLS", "https://rpc1.example.com, https://rpc2.example.com, https://rpc3.example.com")
-		defer os.Unsetenv("RMM_TRACKER_RPC_URLS")
+		require.NoError(t, os.Setenv("RMM_TRACKER_RPC_URLS", "https://rpc1.example.com, https://rpc2.example.com, https://rpc3.example.com"))
+		defer func() { _ = os.Unsetenv("RMM_TRACKER_RPC_URLS") }()
 
 		cfg, err := Load(configPath)
 		require.NoError(t, err)
@@ -149,7 +149,7 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
 		_, err = Load(configPath)
@@ -170,7 +170,7 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
 		cfg, err := Load(configPath)
@@ -196,11 +196,11 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
-		os.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/db")
-		defer os.Unsetenv("DATABASE_URL")
+		require.NoError(t, os.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/db"))
+		defer func() { _ = os.Unsetenv("DATABASE_URL") }()
 
 		cfg, dbURL, err := LoadWithDefaults(configPath)
 		require.NoError(t, err)
@@ -222,10 +222,10 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
-		os.Unsetenv("DATABASE_URL")
+		_ = os.Unsetenv("DATABASE_URL")
 
 		_, _, err = LoadWithDefaults(configPath)
 		assert.Error(t, err)
@@ -233,8 +233,8 @@ fallback_decimals = 18
 	})
 
 	t.Run("propagates config load errors", func(t *testing.T) {
-		os.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/db")
-		defer os.Unsetenv("DATABASE_URL")
+		require.NoError(t, os.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/db"))
+		defer func() { _ = os.Unsetenv("DATABASE_URL") }()
 
 		// Invalid config path with no env vars
 		_, _, err := LoadWithDefaults("/nonexistent/invalid.toml")
@@ -256,7 +256,7 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
 		cfg, err := Load(configPath)
@@ -284,7 +284,7 @@ label = "TEST"
 address = "0x0000000000000000000000000000000000000000"
 fallback_decimals = 18
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
+		err := os.WriteFile(configPath, []byte(configContent), 0600)
 		require.NoError(t, err)
 
 		cfg, err := Load(configPath)
