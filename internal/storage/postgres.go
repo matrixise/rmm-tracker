@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -133,10 +134,12 @@ func (s *Store) GetBalances(ctx context.Context, wallet, symbol string, limit in
 
 // GetWeeklyBalances returns the last recorded balance per (week, symbol) for a wallet,
 // ordered by week descending.
+// Uses the stored week_bucket column + idx_token_balances_wallet_wbucket_symbol to avoid
+// a full sort on DATE_TRUNC.
 func (s *Store) GetWeeklyBalances(ctx context.Context, wallet string) ([]WeeklyBalance, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT DISTINCT ON (DATE_TRUNC('week', queried_at), symbol)
-			DATE_TRUNC('week', queried_at) AS week,
+		SELECT DISTINCT ON (week_bucket, symbol)
+			week_bucket AS week,
 			wallet,
 			token_address,
 			symbol,
@@ -145,7 +148,7 @@ func (s *Store) GetWeeklyBalances(ctx context.Context, wallet string) ([]WeeklyB
 			queried_at
 		FROM token_balances
 		WHERE wallet = $1
-		ORDER BY DATE_TRUNC('week', queried_at) DESC, symbol, queried_at DESC`,
+		ORDER BY week_bucket DESC, symbol, queried_at DESC`,
 		wallet,
 	)
 	if err != nil {
@@ -165,35 +168,39 @@ func (s *Store) GetWeeklyBalances(ctx context.Context, wallet string) ([]WeeklyB
 	return results, rows.Err()
 }
 
-// GetWeeklyReport returns per-token balance comparison between current and previous week for a wallet.
-func (s *Store) GetWeeklyReport(ctx context.Context, wallet string) ([]WeeklyReport, error) {
+// GetWeeklyReport returns per-token balance comparison between current and N-1 previous weeks for a wallet.
+// weeks must be >= 2 and <= 52.
+func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) ([]WeeklyReport, error) {
+	if weeks < 2 {
+		return nil, fmt.Errorf("weeks must be >= 2")
+	}
 	rows, err := s.pool.Query(ctx, `
 		WITH ranked AS (
-			SELECT DISTINCT ON (DATE_TRUNC('week', queried_at), symbol)
-				DATE_TRUNC('week', queried_at) AS week_bucket,
+			SELECT DISTINCT ON (week_bucket, symbol)
+				week_bucket,
 				symbol, token_address, balance
 			FROM token_balances
 			WHERE wallet = $1
-			ORDER BY DATE_TRUNC('week', queried_at) DESC, symbol, queried_at DESC
+			ORDER BY week_bucket DESC, symbol, queried_at DESC
 		),
 		recent_weeks AS (
 			SELECT week_bucket FROM ranked
 			GROUP BY week_bucket
 			ORDER BY week_bucket DESC
-			LIMIT 2
+			LIMIT $2
 		)
 		SELECT r.symbol, r.token_address, r.week_bucket, r.balance
 		FROM ranked r
 		WHERE r.week_bucket IN (SELECT week_bucket FROM recent_weeks)
 		ORDER BY r.symbol, r.week_bucket DESC`,
-		wallet,
+		wallet, weeks,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	// Group rows by symbol: first row = current week, second = previous week
+	// Group rows by symbol: first row = current week, last = oldest week
 	type row struct {
 		symbol       string
 		tokenAddress string
@@ -218,8 +225,9 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string) ([]WeeklyRep
 		return nil, err
 	}
 
-	seven := decimal.NewFromInt(7)
-	hundred := decimal.NewFromInt(100)
+	hundred     := decimal.NewFromInt(100)
+	one         := decimal.NewFromInt(1)
+	daysPerYear := decimal.NewFromInt(365)
 
 	var results []WeeklyReport
 	for _, sym := range symbolOrder {
@@ -230,7 +238,7 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string) ([]WeeklyRep
 		current := entries[0].balance
 		var previous decimal.Decimal
 		if len(entries) >= 2 {
-			previous = entries[1].balance
+			previous = entries[len(entries)-1].balance
 		}
 
 		change := current.Sub(previous)
@@ -240,16 +248,47 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string) ([]WeeklyRep
 			changePercent = change.Div(previous).Mul(hundred)
 		}
 
-		dailyAvg := change.Div(seven)
+		// Bug fix: use the actual elapsed days between oldest and newest buckets,
+		// not the theoretical 7*(weeks-1). Handles the case where fewer weeks exist
+		// in the DB than requested.
+		var actualDays decimal.Decimal
+		if len(entries) >= 2 {
+			d := entries[0].weekBucket.Sub(entries[len(entries)-1].weekBucket).Hours() / 24
+			actualDays = decimal.NewFromFloat(d)
+		}
+
+		var dailyAvg decimal.Decimal
+		if actualDays.IsPositive() {
+			dailyAvg = change.Div(actualDays)
+		}
+
+		var apy decimal.Decimal
+		if !previous.IsZero() && actualDays.IsPositive() {
+			// APY = (1 + change/previous)^(365/actualDays) - 1
+			ratio, _ := one.Add(change.Div(previous)).Float64()
+			// Bug fix: math.Pow(negative, non-integer) returns NaN — guard against it.
+			if ratio > 0 {
+				exponent, _ := daysPerYear.Div(actualDays).Float64()
+				apy = decimal.NewFromFloat(math.Pow(ratio, exponent)-1).Mul(hundred)
+			}
+		}
+
+		// Bug fix: week_start is the oldest bucket (start of the comparison period),
+		// week_end is the end of the most recent week (newest bucket + 7 days).
+		weekStart := entries[len(entries)-1].weekBucket
+		weekEnd   := entries[0].weekBucket.Add(7 * 24 * time.Hour)
 
 		results = append(results, WeeklyReport{
 			Symbol:          sym,
 			TokenAddress:    entries[0].tokenAddress,
+			WeekStart:       weekStart,
+			WeekEnd:         weekEnd,
 			CurrentBalance:  current,
 			PreviousBalance: previous,
 			Change:          change,
 			ChangePercent:   changePercent,
 			DailyAvgChange:  dailyAvg,
+			APY:             apy,
 		})
 	}
 
