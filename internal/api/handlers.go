@@ -80,6 +80,7 @@ func (h *Handler) GetWeeklyBalances(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetWeeklyReport handles GET /api/v1/wallets/{wallet}/report/weekly
+// Optional query param: weeks (integer >= 2, default 2)
 func (h *Handler) GetWeeklyReport(w http.ResponseWriter, r *http.Request) {
 	wallet := chi.URLParam(r, "wallet")
 	if wallet == "" {
@@ -87,7 +88,17 @@ func (h *Handler) GetWeeklyReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	report, err := h.store.GetWeeklyReport(r.Context(), wallet)
+	weeks := 2
+	if weeksStr := r.URL.Query().Get("weeks"); weeksStr != "" {
+		v, err := strconv.Atoi(weeksStr)
+		if err != nil || v < 2 {
+			http.Error(w, "weeks must be an integer >= 2", http.StatusBadRequest)
+			return
+		}
+		weeks = v
+	}
+
+	report, err := h.store.GetWeeklyReport(r.Context(), wallet, weeks)
 	if err != nil {
 		slog.Error("GetWeeklyReport query failed", "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
