@@ -4,6 +4,7 @@ go 1.25.6
 
 require (
 	github.com/ethereum/go-ethereum v1.16.8
+	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-co-op/gocron/v2 v2.19.1
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e

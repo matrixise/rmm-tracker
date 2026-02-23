@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/matrixise/rmm-tracker/internal/api"
 	"github.com/matrixise/rmm-tracker/internal/blockchain"
 	"github.com/matrixise/rmm-tracker/internal/config"
 	"github.com/matrixise/rmm-tracker/internal/health"
@@ -170,9 +171,12 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		httpPort = 8080 // Default port
 	}
 
+	apiHandler := api.NewHandler(store)
+	router := api.NewRouter(healthChecker.Handler(), apiHandler)
+
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", httpPort),
-		Handler: http.HandlerFunc(healthChecker.Handler()),
+		Handler: router,
 	}
 
 	go func() {
