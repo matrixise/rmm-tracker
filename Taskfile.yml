@@ -2,6 +2,11 @@
 
 version: "3"
 
+includes:
+  local:
+    taskfile: ./Taskfile.local.yml
+    optional: true
+
 vars:
   BINARY: rmm-tracker
   VERSION:
@@ -27,7 +32,12 @@ tasks:
   build:
     desc: Build the binary
     cmds:
-      - go build -ldflags "-X github.com/matrixise/rmm-tracker/cmd.Version={{.VERSION}} -X github.com/matrixise/rmm-tracker/cmd.GitCommit={{.GIT_COMMIT}} -X github.com/matrixise/rmm-tracker/cmd.BuildTime={{.BUILD_TIME}}" -o {{.BINARY}} .
+      - |
+        go build -ldflags \
+          "-X github.com/matrixise/rmm-tracker/cmd.Version={{.VERSION}} \
+           -X github.com/matrixise/rmm-tracker/cmd.GitCommit={{.GIT_COMMIT}} \
+           -X github.com/matrixise/rmm-tracker/cmd.BuildTime={{.BUILD_TIME}}" \
+          -o {{.BINARY}} .
     sources:
       - "**/*.go"
       - go.mod

@@ -95,6 +95,61 @@ Health check endpoint: `GET /health` (daemon mode only, port 8080).
 - RPC failover is transparent: retries automatically cycle through healthy endpoints
 - Migrations use `IF NOT EXISTS` for backward compatibility
 
+## Taskfile Conventions
+
+Strict rules to follow when creating or modifying `Taskfile.yml`.
+
+### YAML
+
+- **Never use `:` in a `desc:` value** without double quotes — it breaks YAML parsing.
+  - Wrong    : `desc: DESTRUCTIVE: Drop the local database`
+  - Quoted   : `desc: "DESTRUCTIVE: Drop the local database"`
+  - Preferred: `desc: Drop the local database (DESTRUCTIVE)`
+
+### Go template vs shell
+
+- **Shell variables** : double the `$` to prevent interpretation by Taskfile's Go template engine.
+  - Wrong  : `[ "$confirm" = "yes" ]`
+  - Correct: `[ "$$confirm" = "yes" ]`
+
+- **Docker `--format`** : `{{.Xxx}}` strings in shell commands conflict with the Go template engine. Escape them with backticks.
+  - Wrong  : `docker ps --format '{{.Names}}'`
+  - Correct: `docker ps --format '{{` + "`{{.Names}}`" + `}}'`
+
+### Block scalars for complex commands
+
+- **`{` and `}` in a plain YAML scalar** cause a parse error (YAML interprets `{` as a flow mapping start). Any shell command containing braces (`{ cmd; }`, subshells, etc.) must use a `|` block scalar.
+  - Wrong  : `- cmd && fallback || { echo "err" && exit 1; }`
+  - Correct:
+    ```yaml
+    - |
+      cmd && fallback || { echo "err" && exit 1; }
+    ```
+
+- **Long lines** : any shell command exceeding ~160 characters must be split with `\` inside a `|` block scalar. Never write a command longer than 200 characters on a single YAML line.
+  - Always use `|` + `\` for `go build -ldflags`, `docker buildx build`, `ssh ... | docker exec ...`, etc.
+
+- **Validation** : always run both tools in order after any modification — yamllint catches YAML syntax issues, `task --list` catches Go template errors that yamllint cannot see:
+  ```bash
+  uv tool run yamllint Taskfile.yml  # YAML syntax (Python parser)
+  task --list                         # Go template + Taskfile semantics
+  ```
+  These two parsers are not equivalent. yamllint uses PyYAML and knows nothing about Taskfile's `text/template` layer. Errors like unescaped `{{.Names}}` or wrong `$$var` usage are invisible to yamllint but fatal to Task. The project's `.yamllint.yml` sets the line-length limit to 200 characters.
+
+### Shell portability
+
+- **`read -p`** is bash-only and not POSIX portable. Use `printf` + `read` separately.
+  - Wrong  : `read -p "Confirm? " confirm`
+  - Correct: `printf "Confirm? " && read confirm`
+
+- **`&&` / `||` precedence** : `A && B || C` triggers `C` if `A` **or** `B` fails, not only when `B` fails. For confirmation prompts, separate `read` with `;` and group the fallback with `{ }`.
+  - Wrong  : `printf "..." && read confirm && [ "$$confirm" = "yes" ] || exit 1`
+  - Correct: `printf "..." && read confirm; [ "$$confirm" = "yes" ] || { echo "Aborted." && exit 1; }`
+
+### vars with `sh:`
+
+- Vars defined with `sh:` are evaluated **once** at task startup, not before each `cmd`. Do not assume they are re-evaluated dynamically.
+
 ## Related Documentation
 
 - `README.md` - User-facing quick start

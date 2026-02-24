@@ -19,11 +19,19 @@ type SchedulerInterface interface {
 	LastRun() (time.Time, error)
 }
 
+// BuildInfo holds version information set at build time via ldflags
+type BuildInfo struct {
+	Version   string `json:"version"`
+	GitCommit string `json:"git_commit"`
+	BuildTime string `json:"build_time"`
+}
+
 // Checker performs health checks on application dependencies
 type Checker struct {
 	store          *storage.Store
 	client         *blockchain.Client
 	scheduler      SchedulerInterface
+	buildInfo      BuildInfo
 	lastRunTime    time.Time
 	lastRunSuccess bool
 	interval       time.Duration // Fallback for grace period calculation
@@ -31,11 +39,12 @@ type Checker struct {
 }
 
 // NewChecker creates a new health checker
-func NewChecker(store *storage.Store, client *blockchain.Client, scheduler SchedulerInterface, interval time.Duration) *Checker {
+func NewChecker(store *storage.Store, client *blockchain.Client, scheduler SchedulerInterface, interval time.Duration, buildInfo BuildInfo) *Checker {
 	return &Checker{
 		store:     store,
 		client:    client,
 		scheduler: scheduler,
+		buildInfo: buildInfo,
 		interval:  interval,
 	}
 }
@@ -63,6 +72,7 @@ type HealthResponse struct {
 	Timestamp time.Time              `json:"timestamp"`
 	Checks    map[string]CheckDetail `json:"checks"`
 	Uptime    string                 `json:"uptime,omitempty"`
+	Build     BuildInfo              `json:"build"`
 }
 
 // CheckDetail contains details about a specific health check
@@ -108,6 +118,7 @@ func (c *Checker) Check(ctx context.Context) HealthResponse {
 		Timestamp: time.Now(),
 		Checks:    checks,
 		Uptime:    time.Since(startTime).Round(time.Second).String(),
+		Build:     c.buildInfo,
 	}
 }
 

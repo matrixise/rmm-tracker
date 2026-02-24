@@ -20,6 +20,9 @@ rmm-tracker
 # Task runner cache
 .task/
 
+# Local tasks (infrastructure-specific, not for the repository)
+Taskfile.local.yml
+
 # Go workspace file
 go.work
 
