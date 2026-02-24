@@ -21,6 +21,8 @@ import (
 // Set only the function fields you need for each test.
 type mockStore struct {
 	getBalancesFn       func(ctx context.Context, wallet, symbol string, limit int) ([]storage.TokenBalance, error)
+	getDailyBalancesFn  func(ctx context.Context, wallet string) ([]storage.DailyBalance, error)
+	getDailyReportFn    func(ctx context.Context, wallet string, days int) ([]storage.DailyReport, error)
 	getWeeklyBalancesFn func(ctx context.Context, wallet string) ([]storage.WeeklyBalance, error)
 	getWeeklyReportFn   func(ctx context.Context, wallet string, weeks int) ([]storage.WeeklyReport, error)
 	getWalletsFn        func(ctx context.Context) ([]string, error)
@@ -33,6 +35,20 @@ func (m *mockStore) GetBalances(ctx context.Context, wallet, symbol string, limi
 		return m.getBalancesFn(ctx, wallet, symbol, limit)
 	}
 	return []storage.TokenBalance{}, nil
+}
+
+func (m *mockStore) GetDailyBalances(ctx context.Context, wallet string) ([]storage.DailyBalance, error) {
+	if m.getDailyBalancesFn != nil {
+		return m.getDailyBalancesFn(ctx, wallet)
+	}
+	return []storage.DailyBalance{}, nil
+}
+
+func (m *mockStore) GetDailyReport(ctx context.Context, wallet string, days int) ([]storage.DailyReport, error) {
+	if m.getDailyReportFn != nil {
+		return m.getDailyReportFn(ctx, wallet, days)
+	}
+	return []storage.DailyReport{}, nil
 }
 
 func (m *mockStore) GetWeeklyBalances(ctx context.Context, wallet string) ([]storage.WeeklyBalance, error) {
@@ -79,7 +95,7 @@ func newRouter(ms *mockStore) http.Handler {
 	h := NewHandler(ms)
 	return NewRouter(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}, h)
+	}, h, nil, false, ms)
 }
 
 func get(t *testing.T, router http.Handler, path string) *httptest.ResponseRecorder {

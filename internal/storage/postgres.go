@@ -130,6 +130,90 @@ func (s *Store) GetBalances(ctx context.Context, wallet, symbol string, limit in
 	return balances, rows.Err()
 }
 
+// GetDailyBalances returns the last recorded balance per (day, symbol) for a wallet,
+// ordered by day descending.
+func (s *Store) GetDailyBalances(ctx context.Context, wallet string) ([]DailyBalance, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT DISTINCT ON (day_bucket, symbol)
+			day_bucket AS day,
+			wallet,
+			token_address,
+			symbol,
+			decimals,
+			balance,
+			queried_at
+		FROM token_balances
+		WHERE wallet = $1
+		ORDER BY day_bucket DESC, symbol, queried_at DESC`,
+		wallet,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var results []DailyBalance
+	for rows.Next() {
+		var b DailyBalance
+		if err := rows.Scan(&b.Day, &b.Wallet, &b.TokenAddress, &b.Symbol, &b.Decimals, &b.Balance, &b.QueriedAt); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		results = append(results, b)
+	}
+	return results, rows.Err()
+}
+
+// GetDailyReport returns per-token day-over-day balance comparisons for a wallet.
+// days must be >= 2 and <= 365.
+func (s *Store) GetDailyReport(ctx context.Context, wallet string, days int) ([]DailyReport, error) {
+	if days < 2 {
+		return nil, fmt.Errorf("days must be >= 2")
+	}
+	rows, err := s.pool.Query(ctx, `
+		WITH ranked AS (
+			SELECT DISTINCT ON (day_bucket, symbol)
+				day_bucket,
+				symbol, token_address, balance
+			FROM token_balances
+			WHERE wallet = $1
+			ORDER BY day_bucket DESC, symbol, queried_at DESC
+		),
+		recent_days AS (
+			SELECT day_bucket FROM ranked
+			GROUP BY day_bucket
+			ORDER BY day_bucket DESC
+			LIMIT $2
+		)
+		SELECT r.symbol, r.token_address, r.day_bucket, r.balance
+		FROM ranked r
+		WHERE r.day_bucket IN (SELECT day_bucket FROM recent_days)
+		ORDER BY r.symbol, r.day_bucket DESC`,
+		wallet, days,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	bySymbol := make(map[string][]dayEntry)
+	symbolOrder := []string{}
+	for rows.Next() {
+		var e dayEntry
+		if err := rows.Scan(&e.symbol, &e.tokenAddress, &e.dayBucket, &e.balance); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		if _, seen := bySymbol[e.symbol]; !seen {
+			symbolOrder = append(symbolOrder, e.symbol)
+		}
+		bySymbol[e.symbol] = append(bySymbol[e.symbol], e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return computeDailyReport(symbolOrder, bySymbol), nil
+}
+
 // GetWeeklyBalances returns the last recorded balance per (week, symbol) for a wallet,
 // ordered by week descending.
 // Uses the stored week_bucket column + idx_token_balances_wallet_wbucket_symbol to avoid
