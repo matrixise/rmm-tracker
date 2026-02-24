@@ -25,7 +25,7 @@ import (
 var (
 	interval     string
 	cronExpr     string
-	enableHTTP   bool
+	httpAddr     string
 	enableDaemon bool
 )
 
@@ -41,7 +41,8 @@ func init() {
 
 	runCmd.Flags().StringVar(&interval, "interval", "", "run interval as Go duration (5m, 1h, 6h) - clock-aligned")
 	runCmd.Flags().StringVar(&cronExpr, "cron", "", "run interval as cron expression (\"*/5 * * * *\")")
-	runCmd.Flags().BoolVar(&enableHTTP, "http", false, "start HTTP server (/health and API endpoints)")
+	runCmd.Flags().StringVar(&httpAddr, "http", "", "start HTTP server on addr (e.g. :8080, 127.0.0.1:8080)")
+	runCmd.Flags().Lookup("http").NoOptDefVal = ":8080"
 	runCmd.Flags().BoolVar(&enableDaemon, "daemon", false, "start scheduler (requires --interval or --cron)")
 }
 
@@ -117,7 +118,7 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	slog.Info("PostgreSQL connection established")
 
 	// One-shot mode: neither --http nor --daemon
-	if !enableHTTP && !enableDaemon {
+	if httpAddr == "" && !enableDaemon {
 		client, err := blockchain.NewClient(cfg.RPCUrls)
 		if err != nil {
 			slog.Error("Failed to connect to RPC", "error", err)
@@ -194,28 +195,23 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		slog.Info("Daemon mode started with clock-aligned scheduling")
 	}
 
-	if enableHTTP && !enableDaemon {
+	if httpAddr != "" && !enableDaemon {
 		// HTTP-only mode: health checker without scheduler
 		healthChecker = health.NewChecker(store, client, nil, 0, buildInfo)
 	}
 
-	if enableHTTP {
-		httpPort := cfg.HTTPPort
-		if httpPort == 0 {
-			httpPort = 8080
-		}
-
+	if httpAddr != "" {
 		apiHandler := api.NewHandler(store)
 		router := api.NewRouter(healthChecker.Handler(), apiHandler)
 
 		httpServer := &http.Server{
-			Addr:              fmt.Sprintf(":%d", httpPort),
+			Addr:              httpAddr,
 			Handler:           router,
 			ReadHeaderTimeout: 10 * time.Second,
 		}
 
 		go func() {
-			slog.Info("HTTP server starting", "port", httpPort, "endpoint", "/health")
+			slog.Info("HTTP server starting", "addr", httpAddr, "endpoint", "/health")
 			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				slog.Error("HTTP server error", "error", err)
 			}
