@@ -139,6 +139,31 @@ func sampleWeeklyBalance() storage.WeeklyBalance {
 	}
 }
 
+func sampleDailyBalance() storage.DailyBalance {
+	return storage.DailyBalance{
+		Day:          time.Date(2026, 2, 23, 0, 0, 0, 0, time.UTC),
+		Wallet:       "0xWALLET",
+		TokenAddress: "0xTOKEN",
+		Symbol:       "armmUSDC",
+		Decimals:     6,
+		Balance:      decimal.RequireFromString("10000"),
+		QueriedAt:    time.Date(2026, 2, 23, 12, 0, 0, 0, time.UTC),
+	}
+}
+
+func sampleDailyReport() storage.DailyReport {
+	return storage.DailyReport{
+		Symbol:          "armmUSDC",
+		TokenAddress:    "0xTOKEN",
+		Day:             time.Date(2026, 2, 23, 0, 0, 0, 0, time.UTC),
+		CurrentBalance:  decimal.RequireFromString("10100"),
+		PreviousBalance: decimal.RequireFromString("10000"),
+		Change:          decimal.RequireFromString("100"),
+		ChangePercent:   decimal.RequireFromString("1"),
+		APY:             decimal.RequireFromString("67.768"),
+	}
+}
+
 func sampleWeeklyReport() storage.WeeklyReport {
 	return storage.WeeklyReport{
 		Symbol:          "armmUSDC",
@@ -407,6 +432,160 @@ func TestGetWeeklyReport_EmptyResult_ReturnsEmptyArray(t *testing.T) {
 }
 
 // =============================================================================
+// GetDailyBalances
+// =============================================================================
+
+func TestGetDailyBalances_ReturnsBalances(t *testing.T) {
+	ms := &mockStore{
+		getDailyBalancesFn: func(_ context.Context, wallet string) ([]storage.DailyBalance, error) {
+			assert.Equal(t, "0xWALLET", wallet)
+			return []storage.DailyBalance{sampleDailyBalance()}, nil
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/balances/daily")
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
+
+	result := decodeJSON[[]map[string]any](t, rec)
+	require.Len(t, result, 1)
+	assert.Contains(t, result[0], "day")
+	assert.Contains(t, result[0], "wallet")
+	assert.Contains(t, result[0], "token_address")
+	assert.Contains(t, result[0], "queried_at")
+}
+
+func TestGetDailyBalances_StoreError_Returns500(t *testing.T) {
+	ms := &mockStore{
+		getDailyBalancesFn: func(_ context.Context, _ string) ([]storage.DailyBalance, error) {
+			return nil, errors.New("timeout")
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/balances/daily")
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestGetDailyBalances_EmptyResult_ReturnsEmptyArray(t *testing.T) {
+	ms := &mockStore{
+		getDailyBalancesFn: func(_ context.Context, _ string) ([]storage.DailyBalance, error) {
+			return nil, nil
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/balances/daily")
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Len(t, decodeJSON[[]any](t, rec), 0)
+}
+
+// =============================================================================
+// GetDailyReport
+// =============================================================================
+
+func TestGetDailyReport_DefaultDays_Returns200(t *testing.T) {
+	var capturedDays int
+	ms := &mockStore{
+		getDailyReportFn: func(_ context.Context, wallet string, days int) ([]storage.DailyReport, error) {
+			capturedDays = days
+			assert.Equal(t, "0xWALLET", wallet)
+			return []storage.DailyReport{sampleDailyReport()}, nil
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/report/daily")
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, 31, capturedDays, "default days must be 31")
+
+	result := decodeJSON[[]map[string]any](t, rec)
+	require.Len(t, result, 1)
+	r := result[0]
+	assert.Contains(t, r, "symbol")
+	assert.Contains(t, r, "token_address")
+	assert.Contains(t, r, "day")
+	assert.Contains(t, r, "current_balance")
+	assert.Contains(t, r, "previous_balance")
+	assert.Contains(t, r, "change")
+	assert.Contains(t, r, "change_percent")
+	assert.Contains(t, r, "apy")
+}
+
+func TestGetDailyReport_CustomDays_PassedToStore(t *testing.T) {
+	var capturedDays int
+	ms := &mockStore{
+		getDailyReportFn: func(_ context.Context, _ string, days int) ([]storage.DailyReport, error) {
+			capturedDays = days
+			return []storage.DailyReport{}, nil
+		},
+	}
+
+	get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/report/daily?days=14")
+	assert.Equal(t, 14, capturedDays)
+}
+
+func TestGetDailyReport_InvalidDays_Returns400(t *testing.T) {
+	tests := []struct {
+		name  string
+		query string
+	}{
+		{"days=1 (below minimum)", "?days=1"},
+		{"days=0", "?days=0"},
+		{"days=366 (above max)", "?days=366"},
+		{"days=abc (non-integer)", "?days=abc"},
+		{"days=-1 (negative)", "?days=-1"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := get(t, newRouter(&mockStore{}), "/api/v1/wallets/0xWALLET/report/daily"+tt.query)
+			assert.Equal(t, http.StatusBadRequest, rec.Code, "expected 400 for %s", tt.query)
+		})
+	}
+}
+
+func TestGetDailyReport_BoundaryDays(t *testing.T) {
+	ms := &mockStore{
+		getDailyReportFn: func(_ context.Context, _ string, _ int) ([]storage.DailyReport, error) {
+			return []storage.DailyReport{}, nil
+		},
+	}
+
+	t.Run("days=2 (minimum)", func(t *testing.T) {
+		rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/report/daily?days=2")
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+
+	t.Run("days=365 (maximum)", func(t *testing.T) {
+		rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/report/daily?days=365")
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+}
+
+func TestGetDailyReport_StoreError_Returns500(t *testing.T) {
+	ms := &mockStore{
+		getDailyReportFn: func(_ context.Context, _ string, _ int) ([]storage.DailyReport, error) {
+			return nil, errors.New("connection lost")
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/report/daily")
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestGetDailyReport_EmptyResult_ReturnsEmptyArray(t *testing.T) {
+	ms := &mockStore{
+		getDailyReportFn: func(_ context.Context, _ string, _ int) ([]storage.DailyReport, error) {
+			return nil, nil
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/report/daily")
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Len(t, decodeJSON[[]any](t, rec), 0)
+}
+
+// =============================================================================
 // GetWallets
 // =============================================================================
 
@@ -461,6 +640,8 @@ func TestAllEndpoints_ContentTypeJSON(t *testing.T) {
 		"/api/v1/wallets",
 		"/api/v1/wallets/0xWALLET/balances/weekly",
 		"/api/v1/wallets/0xWALLET/report/weekly",
+		"/api/v1/wallets/0xWALLET/balances/daily",
+		"/api/v1/wallets/0xWALLET/report/daily",
 	}
 
 	for _, path := range endpoints {

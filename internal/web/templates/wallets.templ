@@ -1,16 +1,12 @@
 package templates
 
-import (
-	"github.com/matrixise/rmm-tracker/internal/storage"
-)
-
-templ Wallets(balances []storage.TokenBalance) {
+templ Wallets() {
 	@Layout("Wallets") {
 		<h1 class="text-2xl font-bold text-gray-900 mb-6">Wallets</h1>
-		if len(balances) == 0 {
-			<p class="text-gray-500">No balance records found.</p>
-		} else {
-			<div class="bg-white shadow rounded-lg overflow-hidden">
+		<div x-data="walletList()" x-init="load()">
+			<p x-show="loading" class="text-gray-500">Loading...</p>
+			<p x-show="!loading && balances.length === 0" class="text-gray-500">No balance records found.</p>
+			<div x-show="!loading && balances.length > 0" class="bg-white shadow rounded-lg overflow-hidden">
 				<table class="min-w-full divide-y divide-gray-200">
 					<thead class="bg-gray-50">
 						<tr>
@@ -21,20 +17,35 @@ templ Wallets(balances []storage.TokenBalance) {
 						</tr>
 					</thead>
 					<tbody class="bg-white divide-y divide-gray-200">
-						for _, b := range balances {
+						<template x-for="b in balances" :key="b.id">
 							<tr class="hover:bg-gray-50">
 								<td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-700">
-									<a href={ templ.URL("/wallets/" + b.Wallet) } class="text-indigo-600 hover:text-indigo-800">{ shortAddr(b.Wallet) }</a>
+									<a :href="'/wallets/' + b.wallet" x-text="shortAddr(b.wallet)" class="text-indigo-600 hover:text-indigo-800"></a>
 								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ b.Symbol }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">{ b.Balance.StringFixed(6) }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ b.QueriedAt.Format("2006-01-02 15:04:05 UTC") }</td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="b.symbol"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900" x-text="parseFloat(b.balance).toFixed(6)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="b.queried_at"></td>
 							</tr>
-						}
+						</template>
 					</tbody>
 				</table>
 			</div>
+		</div>
+		<script>
+		function shortAddr(addr) {
+			if (!addr || addr.length <= 12) return addr
+			return addr.slice(0, 6) + '...' + addr.slice(-4)
 		}
+		function walletList() {
+			return {
+				loading: true, balances: [],
+				async load() {
+					this.balances = await fetch('/api/v1/balances?limit=100').then(r => r.json()) || []
+					this.loading = false
+				}
+			}
+		}
+		</script>
 	}
 }
 

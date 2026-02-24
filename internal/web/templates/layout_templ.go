@@ -36,7 +36,7 @@ func Layout(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" — RMM Tracker</title><script src=\"https://cdn.tailwindcss.com\"></script></head><body class=\"h-full\"><nav class=\"bg-white shadow-sm\"><div class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\"><div class=\"flex h-12 items-center gap-6\"><span class=\"font-bold text-indigo-600\">RMM Tracker</span> <a href=\"/\" class=\"text-sm font-medium text-gray-600 hover:text-gray-900\">Dashboard</a> <a href=\"/wallets\" class=\"text-sm font-medium text-gray-600 hover:text-gray-900\">Wallets</a></div></div></nav><main class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" — RMM Tracker</title><script src=\"https://cdn.tailwindcss.com\"></script><script defer src=\"https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js\"></script></head><body class=\"h-full\"><nav class=\"bg-white shadow-sm\"><div class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\"><div class=\"flex h-12 items-center gap-6\"><span class=\"font-bold text-indigo-600\">RMM Tracker</span> <a href=\"/\" class=\"text-sm font-medium text-gray-600 hover:text-gray-900\">Dashboard</a> <a href=\"/wallets\" class=\"text-sm font-medium text-gray-600 hover:text-gray-900\">Wallets</a></div></div></nav><main class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

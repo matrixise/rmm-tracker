@@ -1,26 +1,20 @@
 package templates
 
-import (
-	"time"
-
-	"github.com/matrixise/rmm-tracker/internal/storage"
-)
-
-templ WalletDetail(wallet string, datasetsJSON string, report []storage.WeeklyReport, dailyDatasetsJSON string, dailyReport []storage.DailyReport) {
+templ WalletDetail(wallet string) {
 	@Layout("Wallet " + shortAddr(wallet)) {
 		<div class="mb-6">
 			<a href="/wallets" class="text-sm text-indigo-600 hover:text-indigo-800">← Wallets</a>
 		</div>
 		<h1 class="text-2xl font-bold text-gray-900 mb-1">Wallet</h1>
 		<p class="text-sm font-mono text-gray-500 mb-8">{ wallet }</p>
-		<!-- ── Weekly ── -->
-		<h2 class="text-lg font-semibold text-gray-700 mb-4">Weekly</h2>
-		<div class="bg-white shadow rounded-lg p-6 mb-6">
-			<p class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Balance evolution</p>
-			<canvas id="weekly-chart"></canvas>
-		</div>
-		if len(report) > 0 {
-			<div class="bg-white shadow rounded-lg overflow-hidden mb-10">
+		<div x-data="walletDetail()" data-wallet={ wallet }>
+			<!-- Weekly -->
+			<h2 class="text-lg font-semibold text-gray-700 mb-4">Weekly</h2>
+			<div class="bg-white shadow rounded-lg p-6 mb-6">
+				<p class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Balance evolution</p>
+				<canvas id="weekly-chart"></canvas>
+			</div>
+			<div x-show="weeklyReport.length > 0" class="bg-white shadow rounded-lg overflow-hidden mb-10">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Weekly report</p>
 				</div>
@@ -37,35 +31,27 @@ templ WalletDetail(wallet string, datasetsJSON string, report []storage.WeeklyRe
 						</tr>
 					</thead>
 					<tbody class="bg-white divide-y divide-gray-200">
-						for _, r := range report {
+						<template x-for="r in weeklyReport" :key="r.symbol + r.week_start">
 							<tr class="hover:bg-gray-50">
-								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ r.Symbol }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ formatWeek(r.WeekStart, r.WeekEnd) }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700 font-mono">{ r.PreviousBalance.StringFixed(6) }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700 font-mono">{ r.CurrentBalance.StringFixed(6) }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono">
-									@changeCell(r.Change.IsPositive(), r.Change.IsNegative(), r.Change.StringFixed(6))
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono">
-									@percentCell(r.ChangePercent.IsPositive(), r.ChangePercent.IsNegative(), r.ChangePercent.StringFixed(2))
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono">
-									@apyCell(r.APY.IsPositive(), r.APY.StringFixed(2))
-								</td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="r.symbol"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="formatWeekRange(r.week_start, r.week_end)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700 font-mono" x-text="fmtNum(r.previous_balance, 6)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700 font-mono" x-text="fmtNum(r.current_balance, 6)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono" x-html="changeHtml(r.change, 6)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono" x-html="percentHtml(r.change_percent)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono" x-html="apyHtml(r.apy)"></td>
 							</tr>
-						}
+						</template>
 					</tbody>
 				</table>
 			</div>
-		}
-		<!-- ── Daily ── -->
-		<h2 class="text-lg font-semibold text-gray-700 mb-4">Daily</h2>
-		<div class="bg-white shadow rounded-lg p-6 mb-6">
-			<p class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Balance evolution</p>
-			<canvas id="daily-chart"></canvas>
-		</div>
-		if len(dailyReport) > 0 {
-			<div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+			<!-- Daily -->
+			<h2 class="text-lg font-semibold text-gray-700 mb-4">Daily</h2>
+			<div class="bg-white shadow rounded-lg p-6 mb-6">
+				<p class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Balance evolution</p>
+				<canvas id="daily-chart"></canvas>
+			</div>
+			<div x-show="dailyReport.length > 0" class="bg-white shadow rounded-lg overflow-hidden mb-8">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Daily report</p>
 				</div>
@@ -82,74 +68,125 @@ templ WalletDetail(wallet string, datasetsJSON string, report []storage.WeeklyRe
 						</tr>
 					</thead>
 					<tbody class="bg-white divide-y divide-gray-200">
-						for _, r := range dailyReport {
+						<template x-for="r in dailyReport" :key="r.symbol + r.day">
 							<tr class="hover:bg-gray-50">
-								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ r.Symbol }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ r.Day.Format("Jan 2, 2006") }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700 font-mono">{ r.PreviousBalance.StringFixed(6) }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700 font-mono">{ r.CurrentBalance.StringFixed(6) }</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono">
-									@changeCell(r.Change.IsPositive(), r.Change.IsNegative(), r.Change.StringFixed(6))
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono">
-									@percentCell(r.ChangePercent.IsPositive(), r.ChangePercent.IsNegative(), r.ChangePercent.StringFixed(2))
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono">
-									@apyCell(r.APY.IsPositive(), r.APY.StringFixed(2))
-								</td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="r.symbol"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="fmtDate(r.day)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700 font-mono" x-text="fmtNum(r.previous_balance, 6)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700 font-mono" x-text="fmtNum(r.current_balance, 6)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono" x-html="changeHtml(r.change, 6)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono" x-html="percentHtml(r.change_percent)"></td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono" x-html="apyHtml(r.apy)"></td>
 							</tr>
-						}
+						</template>
 					</tbody>
 				</table>
 			</div>
-		}
-		@templ.Raw(`<script>const __weeklyDatasets=` + datasetsJSON + `;const __dailyDatasets=` + dailyDatasetsJSON + `;</script>`)
+		</div>
 		<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 		<script>
-			const chartOpts = (unit) => ({
-				responsive: true,
-				interaction: { mode: 'index', intersect: false },
-				plugins: { legend: { position: 'top' } },
-				scales: {
-					x: { type: 'time', time: { unit, displayFormats: { week: 'MMM d', day: 'MMM d' } }, title: { display: true, text: unit === 'week' ? 'Week' : 'Day' } },
-					y: { beginAtZero: false, title: { display: true, text: 'Balance' } }
+		const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16']
+
+		function fmtNum(val, decimals) {
+			return parseFloat(val || 0).toFixed(decimals)
+		}
+
+		function fmtDate(iso) {
+			if (!iso) return ''
+			return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+		}
+
+		function formatWeekRange(start, end) {
+			if (!start || !end) return ''
+			const s = new Date(start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+			const e = new Date(end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+			return s + ' \u2013 ' + e
+		}
+
+		function changeHtml(val, decimals) {
+			const n = parseFloat(val || 0)
+			if (n > 0) return '<span class="text-green-600">+' + n.toFixed(decimals) + '</span>'
+			if (n < 0) return '<span class="text-red-600">' + n.toFixed(decimals) + '</span>'
+			return '<span class="text-gray-400">0.' + '0'.repeat(decimals) + '</span>'
+		}
+
+		function percentHtml(val) {
+			const n = parseFloat(val || 0)
+			if (n > 0) return '<span class="text-green-600">+' + n.toFixed(2) + '%</span>'
+			if (n < 0) return '<span class="text-red-600">' + n.toFixed(2) + '%</span>'
+			return '<span class="text-gray-400">0.00%</span>'
+		}
+
+		function apyHtml(val) {
+			const n = parseFloat(val || 0)
+			if (n > 0) return '<span class="text-indigo-600">' + n.toFixed(2) + '%</span>'
+			return '<span class="text-gray-400">\u2014</span>'
+		}
+
+		function buildDatasets(balances, dateField, pointRadius) {
+			if (!Array.isArray(balances)) return []
+			const bySymbol = {}
+			for (const b of balances) {
+				if (!bySymbol[b.symbol]) bySymbol[b.symbol] = []
+				bySymbol[b.symbol].push(b)
+			}
+			return Object.keys(bySymbol).sort().map((symbol, i) => {
+				const rows = bySymbol[symbol].slice().reverse()
+				const data = rows.map(r => ({ x: r[dateField], y: parseFloat(r.balance) }))
+				const color = CHART_COLORS[i % CHART_COLORS.length]
+				return { label: symbol, data, borderColor: color, backgroundColor: color + '26', tension: 0.3, fill: false, pointRadius }
+			})
+		}
+
+		function walletDetail() {
+			// Chart instances stored outside Alpine reactivity to avoid DOM thrashing
+			let weeklyChart = null
+			let dailyChart = null
+
+			return {
+				wallet: null,
+				weeklyReport: [], dailyReport: [],
+				init() {
+					this.wallet = this.$el.dataset.wallet
+					this.load()
+				},
+				async load() {
+					const [wBal, wRep, dBal, dRep] = await Promise.all([
+						fetch(`/api/v1/wallets/${this.wallet}/balances/weekly`).then(r => r.json()),
+						fetch(`/api/v1/wallets/${this.wallet}/report/weekly?weeks=8`).then(r => r.json()),
+						fetch(`/api/v1/wallets/${this.wallet}/balances/daily`).then(r => r.json()),
+						fetch(`/api/v1/wallets/${this.wallet}/report/daily?days=31`).then(r => r.json()),
+					])
+					this.weeklyReport = wRep || []
+					this.dailyReport  = dRep || []
+					this.$nextTick(() => {
+						if (weeklyChart) { weeklyChart.destroy(); weeklyChart = null }
+						if (dailyChart)  { dailyChart.destroy();  dailyChart  = null }
+						weeklyChart = renderChart('weekly-chart', buildDatasets(wBal, 'week', 3), 'week')
+						dailyChart  = renderChart('daily-chart',  buildDatasets(dBal, 'day',  2), 'day')
+					})
+				},
+			}
+		}
+
+		function renderChart(id, datasets, unit) {
+			const canvas = document.getElementById(id)
+			if (!canvas) return null
+			return new Chart(canvas, {
+				type: 'line',
+				data: { datasets },
+				options: {
+					responsive: true,
+					interaction: { mode: 'index', intersect: false },
+					plugins: { legend: { position: 'top' } },
+					scales: {
+						x: { type: 'time', time: { unit, displayFormats: { week: 'MMM d', day: 'MMM d' } }, title: { display: true, text: unit === 'week' ? 'Week' : 'Day' } },
+						y: { beginAtZero: false, title: { display: true, text: 'Balance' } }
+					}
 				}
-			});
-			new Chart(document.getElementById('weekly-chart'), { type: 'line', data: { datasets: __weeklyDatasets }, options: chartOpts('week') });
-			new Chart(document.getElementById('daily-chart'),  { type: 'line', data: { datasets: __dailyDatasets },  options: chartOpts('day')  });
+			})
+		}
 		</script>
 	}
-}
-
-templ changeCell(pos, neg bool, val string) {
-	if pos {
-		<span class="text-green-600">+{ val }</span>
-	} else if neg {
-		<span class="text-red-600">{ val }</span>
-	} else {
-		<span class="text-gray-400">0.000000</span>
-	}
-}
-
-templ percentCell(pos, neg bool, val string) {
-	if pos {
-		<span class="text-green-600">+{ val }%</span>
-	} else if neg {
-		<span class="text-red-600">{ val }%</span>
-	} else {
-		<span class="text-gray-400">0.00%</span>
-	}
-}
-
-templ apyCell(pos bool, val string) {
-	if pos {
-		<span class="text-indigo-600">{ val }%</span>
-	} else {
-		<span class="text-gray-400">—</span>
-	}
-}
-
-func formatWeek(start, end time.Time) string {
-	return start.Format("Jan 2") + " – " + end.Format("Jan 2, 2006")
 }

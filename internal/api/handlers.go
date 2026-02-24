@@ -115,6 +115,67 @@ func (h *Handler) GetWeeklyReport(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetDailyBalances handles GET /api/v1/wallets/{wallet}/balances/daily
+func (h *Handler) GetDailyBalances(w http.ResponseWriter, r *http.Request) {
+	wallet := chi.URLParam(r, "wallet")
+	if wallet == "" {
+		http.Error(w, "wallet parameter required", http.StatusBadRequest)
+		return
+	}
+
+	balances, err := h.store.GetDailyBalances(r.Context(), wallet)
+	if err != nil {
+		slog.Error("GetDailyBalances query failed", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if balances == nil {
+		balances = []storage.DailyBalance{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(balances); err != nil {
+		slog.Error("GetDailyBalances encode failed", "error", err)
+	}
+}
+
+// GetDailyReport handles GET /api/v1/wallets/{wallet}/report/daily
+// Optional query param: days (integer 2-365, default 31)
+func (h *Handler) GetDailyReport(w http.ResponseWriter, r *http.Request) {
+	wallet := chi.URLParam(r, "wallet")
+	if wallet == "" {
+		http.Error(w, "wallet parameter required", http.StatusBadRequest)
+		return
+	}
+
+	days := 31
+	if daysStr := r.URL.Query().Get("days"); daysStr != "" {
+		v, err := strconv.Atoi(daysStr)
+		if err != nil || v < 2 || v > 365 {
+			http.Error(w, "days must be an integer between 2 and 365", http.StatusBadRequest)
+			return
+		}
+		days = v
+	}
+
+	report, err := h.store.GetDailyReport(r.Context(), wallet, days)
+	if err != nil {
+		slog.Error("GetDailyReport query failed", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if report == nil {
+		report = []storage.DailyReport{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(report); err != nil {
+		slog.Error("GetDailyReport encode failed", "error", err)
+	}
+}
+
 // GetWallets handles GET /api/v1/wallets
 func (h *Handler) GetWallets(w http.ResponseWriter, r *http.Request) {
 	wallets, err := h.store.GetWallets(r.Context())

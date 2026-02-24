@@ -10,9 +10,7 @@ import "context"
 import "io"
 import "bytes"
 
-import "strconv"
-
-func Dashboard(status string, statusColor string, walletCount int, tokenCount int, lastUpdate string) templ.Component {
+func Dashboard() templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -31,76 +29,7 @@ func Dashboard(status string, statusColor string, walletCount int, tokenCount in
 				templ_7745c5c3_Buffer = templ.GetBuffer()
 				defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<h1 class=\"text-2xl font-bold text-gray-900 mb-6\">Dashboard</h1><div class=\"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8\"><div class=\"bg-white rounded-lg shadow p-4 flex items-center gap-3\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var3 = []any{"inline-block w-3 h-3 rounded-full " + statusColor}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var3...)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<span class=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ.CSSClasses(templ_7745c5c3_Var3).String()))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></span><div><p class=\"text-xs text-gray-500 uppercase tracking-wide\">Health</p><p class=\"text-lg font-semibold text-gray-900\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(status)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/dashboard.templ`, Line: 12, Col: 60}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p></div></div><div class=\"bg-white rounded-lg shadow p-4\"><p class=\"text-xs text-gray-500 uppercase tracking-wide\">Wallets tracked</p><p class=\"text-3xl font-bold text-indigo-600\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(walletCount))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/dashboard.templ`, Line: 17, Col: 77}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p></div><div class=\"bg-white rounded-lg shadow p-4\"><p class=\"text-xs text-gray-500 uppercase tracking-wide\">Tokens tracked</p><p class=\"text-3xl font-bold text-indigo-600\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(tokenCount))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/dashboard.templ`, Line: 21, Col: 76}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p></div><div class=\"bg-white rounded-lg shadow p-4\"><p class=\"text-xs text-gray-500 uppercase tracking-wide\">Last update</p><p class=\"text-sm font-medium text-gray-900 mt-1\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var7 string
-			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(lastUpdate)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/dashboard.templ`, Line: 25, Col: 66}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p></div></div>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<h1 class=\"text-2xl font-bold text-gray-900 mb-6\">Dashboard</h1><div x-data=\"dashboard()\" x-init=\"load()\"><div x-show=\"loading\" class=\"text-gray-400 text-sm mb-4\">Loading...</div><div x-show=\"!loading\" class=\"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8\"><div class=\"bg-white rounded-lg shadow p-4 flex items-center gap-3\"><span class=\"inline-block w-3 h-3 rounded-full\" :class=\"statusColor\"></span><div><p class=\"text-xs text-gray-500 uppercase tracking-wide\">Health</p><p class=\"text-lg font-semibold text-gray-900\" x-text=\"status\"></p></div></div><div class=\"bg-white rounded-lg shadow p-4\"><p class=\"text-xs text-gray-500 uppercase tracking-wide\">Wallets tracked</p><p class=\"text-3xl font-bold text-indigo-600\" x-text=\"walletCount\"></p></div><div class=\"bg-white rounded-lg shadow p-4\"><p class=\"text-xs text-gray-500 uppercase tracking-wide\">Tokens tracked</p><p class=\"text-3xl font-bold text-indigo-600\" x-text=\"tokenCount\"></p></div><div class=\"bg-white rounded-lg shadow p-4\"><p class=\"text-xs text-gray-500 uppercase tracking-wide\">Last update</p><p class=\"text-sm font-medium text-gray-900 mt-1\" x-text=\"lastUpdate\"></p></div></div></div><script>\n\t\tfunction dashboard() {\n\t\t\treturn {\n\t\t\t\tloading: true,\n\t\t\t\tstatus: '—', statusColor: 'bg-gray-400',\n\t\t\t\twalletCount: 0, tokenCount: 0, lastUpdate: '—',\n\t\t\t\tasync load() {\n\t\t\t\t\tconst [health, wallets, balances] = await Promise.all([\n\t\t\t\t\t\tfetch('/health').then(r => r.json()),\n\t\t\t\t\t\tfetch('/api/v1/wallets').then(r => r.json()),\n\t\t\t\t\t\tfetch('/api/v1/balances?limit=100').then(r => r.json()),\n\t\t\t\t\t])\n\t\t\t\t\tconst s = (health && health.status) || 'unknown'\n\t\t\t\t\tif (s === 'ok') { this.status = 'ok'; this.statusColor = 'bg-green-500' }\n\t\t\t\t\telse if (s === 'degraded') { this.status = 'degraded'; this.statusColor = 'bg-yellow-500' }\n\t\t\t\t\telse if (s === 'error') { this.status = 'error'; this.statusColor = 'bg-red-500' }\n\t\t\t\t\telse { this.status = s; this.statusColor = 'bg-gray-400' }\n\t\t\t\t\tthis.walletCount = Array.isArray(wallets) ? wallets.length : 0\n\t\t\t\t\tconst seen = new Set((Array.isArray(balances) ? balances : []).map(b => b.symbol))\n\t\t\t\t\tthis.tokenCount = seen.size\n\t\t\t\t\tthis.lastUpdate = (health && health.timestamp) ? new Date(health.timestamp).toLocaleString() : '—'\n\t\t\t\t\tthis.loading = false\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\t</script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
