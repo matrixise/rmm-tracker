@@ -103,7 +103,7 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	// Run database migrations
 	if err := storage.RunMigrations(ctx, databaseURL); err != nil {
 		slog.Error("Failed to run migrations", "error", err)
-		return err
+		return fmt.Errorf("database connection failed")
 	}
 	slog.Info("Database migrations applied")
 
@@ -111,7 +111,7 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	store, err := storage.NewStore(ctx, databaseURL)
 	if err != nil {
 		slog.Error("Failed to connect to PostgreSQL", "error", err)
-		return err
+		return fmt.Errorf("database connection failed")
 	}
 	defer store.Close()
 	slog.Info("PostgreSQL connection established")
