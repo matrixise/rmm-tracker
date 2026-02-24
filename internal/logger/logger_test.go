@@ -52,7 +52,7 @@ func TestSetup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Setup(tt.logLevel)
+			Setup(tt.logLevel, "text")
 			// Logger is configured, we can't easily test the level directly
 			// but at least verify it doesn't panic
 			assert.NotNil(t, slog.Default())
@@ -62,10 +62,10 @@ func TestSetup(t *testing.T) {
 
 func TestSetupNoErrors(t *testing.T) {
 	// Verify Setup can be called multiple times without panic
-	Setup("info")
-	Setup("debug")
-	Setup("warn")
-	Setup("error")
+	Setup("info", "text")
+	Setup("debug", "json")
+	Setup("warn", "text")
+	Setup("error", "json")
 
 	assert.NotNil(t, slog.Default())
 }

@@ -5,8 +5,9 @@ import (
 )
 
 var (
-	cfgFile  string
-	logLevel string
+	cfgFile   string
+	logLevel  string
+	logFormat string
 )
 
 // rootCmd represents the base command
@@ -27,4 +28,5 @@ func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: ./config.toml)")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "text", "log output format (text, json)")
 }

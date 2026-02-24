@@ -55,7 +55,7 @@ func getDatabaseURL() (string, error) {
 }
 
 func runMigrateUp(cmd *cobra.Command, args []string) error {
-	logger.Setup(logLevel)
+	logger.Setup(logLevel, logFormat)
 
 	dsn, err := getDatabaseURL()
 	if err != nil {
@@ -73,7 +73,7 @@ func runMigrateUp(cmd *cobra.Command, args []string) error {
 }
 
 func runMigrateDown(cmd *cobra.Command, args []string) error {
-	logger.Setup(logLevel)
+	logger.Setup(logLevel, logFormat)
 
 	dsn, err := getDatabaseURL()
 	if err != nil {
@@ -91,7 +91,7 @@ func runMigrateDown(cmd *cobra.Command, args []string) error {
 }
 
 func runMigrateStatus(cmd *cobra.Command, args []string) error {
-	logger.Setup(logLevel)
+	logger.Setup(logLevel, logFormat)
 
 	dsn, err := getDatabaseURL()
 	if err != nil {

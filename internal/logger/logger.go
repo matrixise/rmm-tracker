@@ -7,7 +7,7 @@ import (
 )
 
 // Setup configures the structured logger
-func Setup(levelStr string) {
+func Setup(levelStr, format string) {
 	var level slog.Level
 
 	switch strings.ToLower(levelStr) {
@@ -23,9 +23,12 @@ func Setup(levelStr string) {
 		level = slog.LevelInfo
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: level,
-	}))
-
-	slog.SetDefault(logger)
+	opts := &slog.HandlerOptions{Level: level}
+	var handler slog.Handler
+	if format == "json" {
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	}
+	slog.SetDefault(slog.New(handler))
 }

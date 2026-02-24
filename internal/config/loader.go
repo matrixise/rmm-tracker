@@ -13,6 +13,7 @@ func Load(configPath string) (*Config, error) {
 
 	// 1. Set defaults
 	v.SetDefault("log_level", "info")
+	v.SetDefault("log_format", "text")
 	v.SetDefault("interval", "") // Run once by default
 	v.SetDefault("http_port", 8080)
 	v.SetDefault("run_immediately", true)
@@ -38,6 +39,7 @@ func Load(configPath string) (*Config, error) {
 		"rpc_urls":        "RPC_URLS",
 		"wallets":         "WALLETS",
 		"log_level":       "LOG_LEVEL",
+		"log_format":      "LOG_FORMAT",
 		"interval":        "INTERVAL",
 		"http_port":       "HTTP_PORT",
 		"run_immediately": "RUN_IMMEDIATELY",

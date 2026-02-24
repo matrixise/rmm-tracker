@@ -21,6 +21,7 @@ type Config struct {
 	Tokens         []TokenConfig `mapstructure:"tokens" validate:"required,min=1,dive"`
 	Interval       string        `mapstructure:"interval" validate:"omitempty,schedule"`
 	LogLevel       string        `mapstructure:"log_level" validate:"omitempty,oneof=debug info warn error"`
+	LogFormat      string        `mapstructure:"log_format" validate:"omitempty,oneof=text json"`
 	HTTPPort       int           `mapstructure:"http_port" validate:"omitempty,min=1024,max=65535"`
 	RunImmediately *bool         `mapstructure:"run_immediately"`
 	Timezone       string        `mapstructure:"timezone" validate:"omitempty,timezone"`

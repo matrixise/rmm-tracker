@@ -21,7 +21,7 @@ func init() {
 
 func validateConfig(cmd *cobra.Command, args []string) error {
 	// Setup logger
-	logger.Setup(logLevel)
+	logger.Setup(logLevel, logFormat)
 
 	// Load config
 	cfg, databaseURL, err := config.LoadWithDefaults(cfgFile)

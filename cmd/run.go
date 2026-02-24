@@ -48,7 +48,7 @@ func init() {
 
 func runTracker(cmd *cobra.Command, args []string) error {
 	// Setup logger (log-level from global flag)
-	logger.Setup(logLevel)
+	logger.Setup(logLevel, logFormat)
 
 	// Validate mutually exclusive flags
 	if interval != "" && cronExpr != "" {
@@ -75,9 +75,17 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Override log level if set in config
-	if cfg.LogLevel != "" {
-		logger.Setup(cfg.LogLevel)
+	// Override log level/format if set in config
+	if cfg.LogLevel != "" || cfg.LogFormat != "" {
+		level := cfg.LogLevel
+		if level == "" {
+			level = logLevel
+		}
+		format := cfg.LogFormat
+		if format == "" {
+			format = logFormat
+		}
+		logger.Setup(level, format)
 	}
 
 	// Resolve effective run interval: flag > config
