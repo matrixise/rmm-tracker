@@ -56,6 +56,13 @@ tasks:
     generates:
       - "{{.BINARY}}"
 
+  dev:
+    desc: Start development server with hot reload (requires air)
+    cmds:
+      - air
+    env:
+      DATABASE_URL: "{{.DATABASE_URL}}"
+
   # ── Test ───────────────────────────────────────────────
 
   test:

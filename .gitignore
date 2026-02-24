@@ -6,6 +6,7 @@ config.toml
 
 # Build artifacts
 rmm-tracker
+tmp/
 *.exe
 *.dll
 *.so
