@@ -29,6 +29,7 @@ linters:
     gosec:
       excludes:
         - G404  # Utilisation de math/rand au lieu de crypto/rand (acceptable pour non-crypto)
+        - G706  # Log injection: URL paths are already parsed and validated by net/http
 
   exclusions:
     presets: []

@@ -1,0 +1,34 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # Regenerate templ files then build the binary
+  pre_cmd = ["templ generate ./internal/web/templates/"]
+  cmd = "go build -o ./tmp/rmm-tracker ."
+  bin = "./tmp/rmm-tracker"
+  args_bin = ["run", "--web"]
+
+  # Watch .go and .templ files
+  include_ext = ["go", "templ"]
+
+  # Ignore generated _templ.go files to avoid double-rebuild loops
+  exclude_regex = ["_templ\\.go$", "_test\\.go$"]
+  exclude_dir = ["tmp", "vendor", "testdata", ".claude"]
+
+  delay = 1000        # ms to wait after a change before rebuilding
+  stop_on_error = true
+  send_interrupt = true
+  kill_delay = "2s"   # give the server time to shut down cleanly
+
+[log]
+  time = true
+
+[color]
+  build   = "yellow"
+  runner  = "green"
+  watcher = "cyan"
+  main    = "magenta"
+
+[screen]
+  clear_on_rebuild = true
+  keep_scroll      = true
