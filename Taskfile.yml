@@ -27,6 +27,17 @@ tasks:
       - task --list
     silent: true
 
+  # ── Web templates ──────────────────────────────────────
+
+  web:generate:
+    desc: Generate Go code from templ templates
+    cmds:
+      - go run github.com/a-h/templ/cmd/templ generate ./internal/web/templates/
+    sources:
+      - internal/web/templates/*.templ
+    generates:
+      - internal/web/templates/*_templ.go
+
   # ── Build ──────────────────────────────────────────────
 
   build:

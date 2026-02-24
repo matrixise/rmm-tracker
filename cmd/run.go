@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sort"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-chi/chi/v5"
 	"github.com/matrixise/rmm-tracker/internal/api"
 	"github.com/matrixise/rmm-tracker/internal/blockchain"
 	"github.com/matrixise/rmm-tracker/internal/config"
@@ -27,6 +29,7 @@ var (
 	cronExpr     string
 	httpAddr     string
 	enableDaemon bool
+	enableWeb    bool
 )
 
 var runCmd = &cobra.Command{
@@ -44,6 +47,7 @@ func init() {
 	runCmd.Flags().StringVar(&httpAddr, "http", "", "start HTTP server on addr (e.g. :8080, 127.0.0.1:8080)")
 	runCmd.Flags().Lookup("http").NoOptDefVal = ":8080"
 	runCmd.Flags().BoolVar(&enableDaemon, "daemon", false, "start scheduler (requires --interval or --cron)")
+	runCmd.Flags().BoolVar(&enableWeb, "web", false, "serve web UI (implies --http :8080 if not set)")
 }
 
 func runTracker(cmd *cobra.Command, args []string) error {
@@ -53,6 +57,9 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	// Validate mutually exclusive flags
 	if interval != "" && cronExpr != "" {
 		return fmt.Errorf("use either --interval or --cron, not both")
+	}
+	if enableWeb && httpAddr == "" {
+		httpAddr = ":8080"
 	}
 
 	// Context with graceful shutdown
@@ -210,7 +217,7 @@ func runTracker(cmd *cobra.Command, args []string) error {
 
 	if httpAddr != "" {
 		apiHandler := api.NewHandler(store)
-		router := api.NewRouter(healthChecker.Handler(), apiHandler)
+		router := api.NewRouter(healthChecker.Handler(), apiHandler, healthChecker, enableWeb, store)
 
 		httpServer := &http.Server{
 			Addr:              httpAddr,
@@ -219,7 +226,8 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		}
 
 		go func() {
-			slog.Info("HTTP server starting", "addr", httpAddr, "endpoint", "/health")
+			slog.Info("HTTP server starting", "addr", httpAddr)
+			logEndpoints(router, httpAddr)
 			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				slog.Error("HTTP server error", "error", err)
 			}
@@ -238,6 +246,30 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	<-ctx.Done()
 	slog.Info("Shutdown requested, stopping")
 	return nil
+}
+
+func logEndpoints(r *chi.Mux, addr string) {
+	host := addr
+	if len(host) > 0 && host[0] == ':' {
+		host = "localhost" + host
+	}
+	base := "http://" + host
+
+	type endpoint struct{ method, url string }
+	var endpoints []endpoint
+	_ = chi.Walk(r, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		endpoints = append(endpoints, endpoint{method, base + route})
+		return nil
+	})
+	sort.Slice(endpoints, func(i, j int) bool {
+		if endpoints[i].url != endpoints[j].url {
+			return endpoints[i].url < endpoints[j].url
+		}
+		return endpoints[i].method < endpoints[j].method
+	})
+	for _, e := range endpoints {
+		slog.Info("Endpoint", "method", e.method, "url", e.url)
+	}
 }
 
 func logRPCConnection(rpcURLs []string) {
