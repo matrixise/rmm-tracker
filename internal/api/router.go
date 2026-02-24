@@ -1,7 +1,9 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -10,11 +12,28 @@ import (
 	"github.com/matrixise/rmm-tracker/internal/web"
 )
 
+// slogLogger is a chi middleware that logs HTTP requests using slog.
+func slogLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		start := time.Now()
+		next.ServeHTTP(ww, r)
+		slog.Info("HTTP",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", ww.Status(),
+			"bytes", ww.BytesWritten(),
+			"duration", time.Since(start),
+			"remote", r.RemoteAddr,
+		)
+	})
+}
+
 // NewRouter creates a Chi router with all application routes.
 // When enableWeb is true, the web UI is mounted at "/" using the provided store and checker.
 func NewRouter(healthHandler http.HandlerFunc, apiHandler *Handler, checker *health.Checker, enableWeb bool, store storage.Storer) *chi.Mux {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(slogLogger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RealIP)
 
