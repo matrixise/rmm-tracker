@@ -184,3 +184,13 @@ tasks:
     desc: Run go vet
     cmds:
       - go vet ./...
+
+  # ── CI (act) ────────────────────────────────────────────────────────────────
+
+  act:test:
+    desc: Run test workflow locally via act (with Go module cache mounted)
+    cmds:
+      - |
+        act -j test \
+          --container-options "-v $$HOME/go/pkg/mod:/root/go/pkg/mod \
+            -v $$HOME/.cache/go-build:/root/.cache/go-build"

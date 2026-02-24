@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-          cache: false
+          cache: true
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -60,6 +60,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Build
+        run: go build ./...
+
       - name: Test
         run: go test -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
 
@@ -67,6 +70,7 @@ jobs:
         run: go tool cover -func=coverage.out
 
       - name: Upload coverage report
+        if: ${{ !env.ACT }}
         uses: actions/upload-artifact@v6
         with:
           name: coverage-report
