@@ -100,7 +100,11 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	if runInterval == "" && cronExpr != "" {
 		runInterval = cronExpr
 	}
-	if runInterval == "" && cfg.Interval != "" {
+	// Read interval from config only when not in HTTP/web mode.
+	// In HTTP/web mode the scheduler must be explicitly requested via
+	// --interval, --cron, or --daemon to avoid surprising cron activations
+	// when config.toml has an interval set.
+	if runInterval == "" && cfg.Interval != "" && !enableWeb && httpAddr == "" {
 		runInterval = cfg.Interval
 	}
 
