@@ -45,7 +45,10 @@ func computeDailyReport(symbolOrder []string, bySymbol map[string][]dayEntry) []
 			if !previous.IsZero() {
 				ratio, _ := one.Add(change.Div(previous)).Float64()
 				if ratio > 0 {
-					apy = decimal.NewFromFloat(math.Pow(ratio, 365) - 1).Mul(hundred)
+					v := math.Pow(ratio, 365) - 1
+					if !math.IsInf(v, 0) && !math.IsNaN(v) {
+						apy = decimal.NewFromFloat(v).Mul(hundred)
+					}
 				}
 			}
 
@@ -130,7 +133,10 @@ func computeWeeklyReport(symbolOrder []string, bySymbol map[string][]weekEntry) 
 			ratio, _ := one.Add(change.Div(previous)).Float64()
 			if ratio > 0 {
 				exponent, _ := daysPerYear.Div(actualDays).Float64()
-				apy = decimal.NewFromFloat(math.Pow(ratio, exponent) - 1).Mul(hundred)
+				v := math.Pow(ratio, exponent) - 1
+				if !math.IsInf(v, 0) && !math.IsNaN(v) {
+					apy = decimal.NewFromFloat(v).Mul(hundred)
+				}
 			}
 		}
 
