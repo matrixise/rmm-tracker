@@ -254,6 +254,73 @@ rmm-tracker/
 - Blockchain: go-ethereum
 - Logging: log/slog (JSON)
 
+## HTTP API
+
+Available in daemon mode only (port 8080).
+
+### Health
+
+```
+GET /health
+```
+
+Returns the overall health status of the application. HTTP 200 if healthy, 503 if any check is in error.
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-01-01T00:00:00Z",
+  "uptime": "2h34m5s",
+  "build": {
+    "version": "1.0.0",
+    "git_commit": "abc1234",
+    "build_time": "2025-01-01T00:00:00Z"
+  },
+  "checks": {
+    "database":      { "status": "ok", "message": "database connection healthy" },
+    "rpc_endpoints": { "status": "ok", "message": "all RPC endpoints healthy" },
+    "daemon":        { "status": "ok", "message": "last executed 4m32s ago, next run in 28s" }
+  }
+}
+```
+
+Status values: `ok`, `degraded`, `error`.
+
+### Balances
+
+```
+GET /api/v1/balances?wallet=0x...&symbol=armmUSDC&limit=100
+```
+
+Query parameters (all optional):
+- `wallet`: filter by wallet address
+- `symbol`: filter by token symbol
+- `limit`: number of results (default: 100)
+
+### Wallets
+
+```
+GET /api/v1/wallets
+```
+
+Returns the list of tracked wallet addresses.
+
+### Weekly balances
+
+```
+GET /api/v1/wallets/{wallet}/balances/weekly
+```
+
+Returns one balance snapshot per week for the given wallet.
+
+### Weekly report
+
+```
+GET /api/v1/wallets/{wallet}/report/weekly?weeks=4
+```
+
+Returns a week-over-week comparison report. `weeks` parameter: integer between 2 and 52 (default: 2).
+
 ## Performance
 
 ### pgx Benefits
