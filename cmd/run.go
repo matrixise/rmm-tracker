@@ -23,8 +23,10 @@ import (
 )
 
 var (
-	interval string
-	once     bool
+	interval     string
+	cronExpr     string
+	enableHTTP   bool
+	enableDaemon bool
 )
 
 var runCmd = &cobra.Command{
@@ -37,13 +39,20 @@ var runCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	runCmd.Flags().StringVar(&interval, "interval", "", "run interval - duration (5m, 1h) or cron (\"*/5 * * * *\") - empty for one-time run")
-	runCmd.Flags().BoolVar(&once, "once", false, "run once and exit (default)")
+	runCmd.Flags().StringVar(&interval, "interval", "", "run interval as Go duration (5m, 1h, 6h) - clock-aligned")
+	runCmd.Flags().StringVar(&cronExpr, "cron", "", "run interval as cron expression (\"*/5 * * * *\")")
+	runCmd.Flags().BoolVar(&enableHTTP, "http", false, "start HTTP server (/health and API endpoints)")
+	runCmd.Flags().BoolVar(&enableDaemon, "daemon", false, "start scheduler (requires --interval or --cron)")
 }
 
 func runTracker(cmd *cobra.Command, args []string) error {
 	// Setup logger (log-level from global flag)
 	logger.Setup(logLevel)
+
+	// Validate mutually exclusive flags
+	if interval != "" && cronExpr != "" {
+		return fmt.Errorf("use either --interval or --cron, not both")
+	}
 
 	// Context with graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -70,10 +79,18 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		logger.Setup(cfg.LogLevel)
 	}
 
-	// Use interval from flag if provided, otherwise from config
+	// Resolve effective run interval: flag > config
 	runInterval := interval
+	if runInterval == "" && cronExpr != "" {
+		runInterval = cronExpr
+	}
 	if runInterval == "" && cfg.Interval != "" {
 		runInterval = cfg.Interval
+	}
+
+	// --daemon requires an interval
+	if enableDaemon && runInterval == "" {
+		return fmt.Errorf("daemon mode requires --interval or --cron")
 	}
 
 	slog.Info("Configuration loaded",
@@ -99,119 +116,134 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	defer store.Close()
 	slog.Info("PostgreSQL connection established")
 
-	// Connect to blockchain with failover support
-	client, err := blockchain.NewClient(cfg.RPCUrls)
-	if err != nil {
-		slog.Error("Failed to connect to RPC", "error", err)
-		return err
-	}
-	defer client.Close()
-
-	if len(cfg.RPCUrls) == 1 {
-		slog.Info("RPC connection established", "endpoint", cfg.RPCUrls[0])
-	} else {
-		slog.Info("RPC connection established with failover",
-			"endpoints", len(cfg.RPCUrls),
-			"primary", cfg.RPCUrls[0])
-	}
-
-	// Run mode: one-time or daemon
-	if runInterval == "" || once {
-		// Run once
+	// One-shot mode: neither --http nor --daemon
+	if !enableHTTP && !enableDaemon {
+		client, err := blockchain.NewClient(cfg.RPCUrls)
+		if err != nil {
+			slog.Error("Failed to connect to RPC", "error", err)
+			return err
+		}
+		defer client.Close()
+		logRPCConnection(cfg.RPCUrls)
 		return processAllWallets(ctx, cfg, client, store)
 	}
 
-	// Daemon mode with scheduler
-	slog.Info("Starting daemon mode with scheduler",
-		"interval", runInterval,
-		"timezone", cfg.GetTimezone().String(),
-		"run_immediately", cfg.ShouldRunImmediately())
-
-	// Create scheduler configuration
-	schedulerCfg := scheduler.Config{
-		Interval:       runInterval,
-		Timezone:       cfg.GetTimezone(),
-		RunImmediately: cfg.ShouldRunImmediately(),
-		Logger:         slog.Default(),
-	}
-
-	// Create job function that tracks execution status
-	var healthChecker *health.Checker
-	jobFunc := func(jobCtx context.Context) error {
-		err := processAllWallets(jobCtx, cfg, client, store)
-		if healthChecker != nil {
-			healthChecker.UpdateLastRun(err == nil)
+	// Connect to blockchain only when daemon mode is active
+	var client *blockchain.Client
+	if enableDaemon {
+		client, err = blockchain.NewClient(cfg.RPCUrls)
+		if err != nil {
+			slog.Error("Failed to connect to RPC", "error", err)
+			return err
 		}
-		return err
+		defer client.Close()
+		logRPCConnection(cfg.RPCUrls)
 	}
 
-	// Create scheduler
-	sched, err := scheduler.NewScheduler(ctx, schedulerCfg, jobFunc)
-	if err != nil {
-		slog.Error("Failed to create scheduler", "error", err)
-		return fmt.Errorf("scheduler creation failed: %w", err)
-	}
-	defer func() { _ = sched.Stop() }()
-
-	// Determine expected interval for health checker
-	expectedInterval, err := sched.GetExpectedInterval()
-	if err != nil {
-		// Fallback to conservative estimate for irregular cron expressions
-		expectedInterval = 5 * time.Minute
-		slog.Warn("Could not determine exact interval, using conservative estimate",
-			"interval", expectedInterval)
-	}
-
-	// Create health checker with scheduler interface
-	healthChecker = health.NewChecker(store, client, sched, expectedInterval, health.BuildInfo{
+	buildInfo := health.BuildInfo{
 		Version:   Version,
 		GitCommit: GitCommit,
 		BuildTime: BuildTime,
-	})
-
-	// Start health check server (daemon mode only)
-	httpPort := cfg.HTTPPort
-	if httpPort == 0 {
-		httpPort = 8080 // Default port
 	}
 
-	apiHandler := api.NewHandler(store)
-	router := api.NewRouter(healthChecker.Handler(), apiHandler)
+	var healthChecker *health.Checker
 
-	httpServer := &http.Server{
-		Addr:              fmt.Sprintf(":%d", httpPort),
-		Handler:           router,
-		ReadHeaderTimeout: 10 * time.Second,
-	}
+	if enableDaemon {
+		slog.Info("Starting daemon mode with scheduler",
+			"interval", runInterval,
+			"timezone", cfg.GetTimezone().String(),
+			"run_immediately", cfg.ShouldRunImmediately())
 
-	go func() {
-		slog.Info("Health check server starting", "port", httpPort, "endpoint", "/health")
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("Health server error", "error", err)
+		schedulerCfg := scheduler.Config{
+			Interval:       runInterval,
+			Timezone:       cfg.GetTimezone(),
+			RunImmediately: cfg.ShouldRunImmediately(),
+			Logger:         slog.Default(),
 		}
-	}()
 
-	// Ensure HTTP server shutdown on exit
-	defer func() {
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer shutdownCancel()
-		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			slog.Error("Health server shutdown error", "error", err)
+		// jobFunc references healthChecker which is set after scheduler creation
+		jobFunc := func(jobCtx context.Context) error {
+			err := processAllWallets(jobCtx, cfg, client, store)
+			if healthChecker != nil {
+				healthChecker.UpdateLastRun(err == nil)
+			}
+			return err
 		}
-	}()
 
-	// Start the scheduler
-	if err := sched.Start(); err != nil {
-		slog.Error("Failed to start scheduler", "error", err)
-		return fmt.Errorf("scheduler start failed: %w", err)
+		sched, err := scheduler.NewScheduler(ctx, schedulerCfg, jobFunc)
+		if err != nil {
+			slog.Error("Failed to create scheduler", "error", err)
+			return fmt.Errorf("scheduler creation failed: %w", err)
+		}
+		defer func() { _ = sched.Stop() }()
+
+		expectedInterval, err := sched.GetExpectedInterval()
+		if err != nil {
+			expectedInterval = 5 * time.Minute
+			slog.Warn("Could not determine exact interval, using conservative estimate",
+				"interval", expectedInterval)
+		}
+
+		healthChecker = health.NewChecker(store, client, sched, expectedInterval, buildInfo)
+
+		if err := sched.Start(); err != nil {
+			slog.Error("Failed to start scheduler", "error", err)
+			return fmt.Errorf("scheduler start failed: %w", err)
+		}
+
+		slog.Info("Daemon mode started with clock-aligned scheduling")
 	}
 
-	slog.Info("Daemon mode started with clock-aligned scheduling")
+	if enableHTTP && !enableDaemon {
+		// HTTP-only mode: health checker without scheduler
+		healthChecker = health.NewChecker(store, client, nil, 0, buildInfo)
+	}
+
+	if enableHTTP {
+		httpPort := cfg.HTTPPort
+		if httpPort == 0 {
+			httpPort = 8080
+		}
+
+		apiHandler := api.NewHandler(store)
+		router := api.NewRouter(healthChecker.Handler(), apiHandler)
+
+		httpServer := &http.Server{
+			Addr:              fmt.Sprintf(":%d", httpPort),
+			Handler:           router,
+			ReadHeaderTimeout: 10 * time.Second,
+		}
+
+		go func() {
+			slog.Info("HTTP server starting", "port", httpPort, "endpoint", "/health")
+			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				slog.Error("HTTP server error", "error", err)
+			}
+		}()
+
+		defer func() {
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer shutdownCancel()
+			if err := httpServer.Shutdown(shutdownCtx); err != nil {
+				slog.Error("HTTP server shutdown error", "error", err)
+			}
+		}()
+	}
 
 	// Wait for shutdown signal
 	<-ctx.Done()
-	slog.Info("Shutdown requested, stopping daemon")
+	slog.Info("Shutdown requested, stopping")
 	return nil
+}
+
+func logRPCConnection(rpcURLs []string) {
+	if len(rpcURLs) == 1 {
+		slog.Info("RPC connection established", "endpoint", rpcURLs[0])
+	} else {
+		slog.Info("RPC connection established with failover",
+			"endpoints", len(rpcURLs),
+			"primary", rpcURLs[0])
+	}
 }
 
 func processAllWallets(ctx context.Context, cfg *config.Config, client *blockchain.Client, store *storage.Store) error {

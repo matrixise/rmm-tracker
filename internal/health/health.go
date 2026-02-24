@@ -95,13 +95,15 @@ func (c *Checker) Check(ctx context.Context) HealthResponse {
 		overallStatus = StatusError
 	}
 
-	// Check 2: RPC endpoint availability
-	rpcCheck := c.checkRPC(ctx)
-	checks["rpc_endpoints"] = rpcCheck
-	if rpcCheck.Status == StatusError {
-		overallStatus = StatusError
-	} else if rpcCheck.Status == StatusDegraded && overallStatus == StatusOK {
-		overallStatus = StatusDegraded
+	// Check 2: RPC endpoint availability (only when blockchain client is configured)
+	if c.client != nil {
+		rpcCheck := c.checkRPC(ctx)
+		checks["rpc_endpoints"] = rpcCheck
+		if rpcCheck.Status == StatusError {
+			overallStatus = StatusError
+		} else if rpcCheck.Status == StatusDegraded && overallStatus == StatusOK {
+			overallStatus = StatusDegraded
+		}
 	}
 
 	// Check 3: Daemon execution (if in daemon mode)
