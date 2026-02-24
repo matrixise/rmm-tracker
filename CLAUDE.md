@@ -150,6 +150,51 @@ Strict rules to follow when creating or modifying `Taskfile.yml`.
 
 - Vars defined with `sh:` are evaluated **once** at task startup, not before each `cmd`. Do not assume they are re-evaluated dynamically.
 
+## Worktrees
+
+Always name worktrees at creation time to avoid random names (e.g. `structured-orbiting-duckling`).
+
+```bash
+# Via CLI
+claude --worktree feat-duckdb
+claude -w fix-something
+```
+
+The name becomes both the directory name under `.claude/worktrees/` and the git branch name (`worktree-feat-duckdb`).
+
+Worktrees created with a random name cannot be renamed directly — they must be deleted and recreated.
+
+## Go Development Tools
+
+This project has two Go intelligence tools that MUST be used at all times.
+
+### MCP gopls (obligatoire)
+
+The `gopls` MCP server is configured and active. Follow this workflow strictly:
+
+**Read workflow** — before answering any question about Go code:
+1. `go_workspace` — always call this at the start of each session
+2. `go_vulncheck` — immediately after `go_workspace`
+3. `go_search` — to locate symbols before reading files
+4. `go_file_context` — MUST be called after reading any `.go` file for the first time
+5. `go_package_api` — to understand inter-package contracts (e.g. `storage.Storer`)
+
+**Edit workflow** — before modifying any Go code:
+1. `go_symbol_references` — find all usages of a symbol before changing its definition
+2. Make edits
+3. `go_diagnostics` — MUST be called after every edit, passing the modified files
+4. Fix all errors reported before proceeding
+
+### LSP tool (obligatoire)
+
+The built-in LSP tool provides go-to-definition, find references, and hover docs.
+Use it for navigation tasks that gopls MCP does not cover (e.g. cross-file jump-to-definition during editing).
+
+### Never skip these tools
+
+Using `Read` alone on a `.go` file without following up with `go_file_context` is insufficient.
+Always combine both to understand intra-package dependencies.
+
 ## Related Documentation
 
 - `README.md` - User-facing quick start
