@@ -20,7 +20,7 @@ A Go application that monitors ERC-20 token balances on Gnosis Chain and persist
 
 ### Prerequisites
 
-- Go 1.25+ (for local development)
+- Go 1.26+ (for local development)
 - PostgreSQL 18+ (or use Docker Compose)
 - Gnosis Chain RPC endpoint
 
