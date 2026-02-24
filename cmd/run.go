@@ -163,7 +163,11 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create health checker with scheduler interface
-	healthChecker = health.NewChecker(store, client, sched, expectedInterval)
+	healthChecker = health.NewChecker(store, client, sched, expectedInterval, health.BuildInfo{
+		Version:   Version,
+		GitCommit: GitCommit,
+		BuildTime: BuildTime,
+	})
 
 	// Start health check server (daemon mode only)
 	httpPort := cfg.HTTPPort

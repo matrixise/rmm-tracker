@@ -6,6 +6,21 @@ repos:
       - id: check-yaml
       - id: check-merge-conflict
 
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+
+  - repo: local
+    hooks:
+      - id: taskfile-validate
+        name: Validate Taskfile (task --list)
+        language: system
+        entry: task
+        args: [--list]
+        files: ^Taskfile\.yml$
+        pass_filenames: false
+
   - repo: https://github.com/golangci/golangci-lint
     rev: v2.10.1
     hooks:
