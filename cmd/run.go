@@ -104,6 +104,11 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		runInterval = cfg.Interval
 	}
 
+	// An interval alone is sufficient to activate daemon mode
+	if runInterval != "" {
+		enableDaemon = true
+	}
+
 	// --daemon requires an interval
 	if enableDaemon && runInterval == "" {
 		return fmt.Errorf("daemon mode requires --interval or --cron")
