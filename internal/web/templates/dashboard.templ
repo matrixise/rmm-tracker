@@ -1,0 +1,30 @@
+package templates
+
+import "strconv"
+
+templ Dashboard(status string, statusColor string, walletCount int, tokenCount int, lastUpdate string) {
+	@Layout("Dashboard") {
+		<h1 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+			<div class="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+				<span class={ "inline-block w-3 h-3 rounded-full " + statusColor }></span>
+				<div>
+					<p class="text-xs text-gray-500 uppercase tracking-wide">Health</p>
+					<p class="text-lg font-semibold text-gray-900">{ status }</p>
+				</div>
+			</div>
+			<div class="bg-white rounded-lg shadow p-4">
+				<p class="text-xs text-gray-500 uppercase tracking-wide">Wallets tracked</p>
+				<p class="text-3xl font-bold text-indigo-600">{ strconv.Itoa(walletCount) }</p>
+			</div>
+			<div class="bg-white rounded-lg shadow p-4">
+				<p class="text-xs text-gray-500 uppercase tracking-wide">Tokens tracked</p>
+				<p class="text-3xl font-bold text-indigo-600">{ strconv.Itoa(tokenCount) }</p>
+			</div>
+			<div class="bg-white rounded-lg shadow p-4">
+				<p class="text-xs text-gray-500 uppercase tracking-wide">Last update</p>
+				<p class="text-sm font-medium text-gray-900 mt-1">{ lastUpdate }</p>
+			</div>
+		</div>
+	}
+}

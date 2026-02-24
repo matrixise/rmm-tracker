@@ -1,0 +1,27 @@
+package templates
+
+templ Layout(title string) {
+	<!DOCTYPE html>
+	<html lang="en" class="h-full bg-gray-50">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } — RMM Tracker</title>
+			<script src="https://cdn.tailwindcss.com"></script>
+		</head>
+		<body class="h-full">
+			<nav class="bg-white shadow-sm">
+				<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+					<div class="flex h-12 items-center gap-6">
+						<span class="font-bold text-indigo-600">RMM Tracker</span>
+						<a href="/" class="text-sm font-medium text-gray-600 hover:text-gray-900">Dashboard</a>
+						<a href="/wallets" class="text-sm font-medium text-gray-600 hover:text-gray-900">Wallets</a>
+					</div>
+				</div>
+			</nav>
+			<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
