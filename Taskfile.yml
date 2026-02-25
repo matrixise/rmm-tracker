@@ -44,8 +44,9 @@ tasks:
     desc: Build the binary
     cmds:
       - |
-        go build -ldflags \
-          "-X github.com/matrixise/rmm-tracker/cmd.Version={{.VERSION}} \
+        go build -trimpath -ldflags \
+          "-s -w \
+           -X github.com/matrixise/rmm-tracker/cmd.Version={{.VERSION}} \
            -X github.com/matrixise/rmm-tracker/cmd.GitCommit={{.GIT_COMMIT}} \
            -X github.com/matrixise/rmm-tracker/cmd.BuildTime={{.BUILD_TIME}}" \
           -o {{.BINARY}} .
