@@ -125,21 +125,31 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		"interval", runInterval,
 	)
 
-	// Run database migrations
-	if err := storage.RunMigrations(ctx, databaseURL); err != nil {
-		slog.Error("Failed to run migrations", "error", err)
-		return fmt.Errorf("database connection failed")
-	}
-	slog.Info("Database migrations applied")
+	// Connect to storage backend
+	var store storage.Storer
+	switch cfg.StorageBackend {
+	case "duckdb":
+		store, err = storage.NewDuckDBStore(ctx, cfg.DuckDBPath)
+		if err != nil {
+			slog.Error("Failed to open DuckDB", "error", err)
+			return fmt.Errorf("database connection failed")
+		}
+		slog.Info("DuckDB connection established", "path", cfg.DuckDBPath)
+	default:
+		if err := storage.RunMigrations(ctx, databaseURL); err != nil {
+			slog.Error("Failed to run migrations", "error", err)
+			return fmt.Errorf("database connection failed")
+		}
+		slog.Info("Database migrations applied")
 
-	// Connect to PostgreSQL
-	store, err := storage.NewStore(ctx, databaseURL)
-	if err != nil {
-		slog.Error("Failed to connect to PostgreSQL", "error", err)
-		return fmt.Errorf("database connection failed")
+		store, err = storage.NewStore(ctx, databaseURL)
+		if err != nil {
+			slog.Error("Failed to connect to PostgreSQL", "error", err)
+			return fmt.Errorf("database connection failed")
+		}
+		slog.Info("PostgreSQL connection established")
 	}
 	defer store.Close()
-	slog.Info("PostgreSQL connection established")
 
 	// One-shot mode: neither --http nor --daemon
 	if httpAddr == "" && !enableDaemon {

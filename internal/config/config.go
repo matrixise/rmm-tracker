@@ -25,6 +25,10 @@ type Config struct {
 	HTTPPort       int           `mapstructure:"http_port" validate:"omitempty,min=1024,max=65535"`
 	RunImmediately *bool         `mapstructure:"run_immediately"`
 	Timezone       string        `mapstructure:"timezone" validate:"omitempty,timezone"`
+
+	// Storage backend selection
+	StorageBackend string `mapstructure:"storage_backend" validate:"omitempty,oneof=postgres duckdb"`
+	DuckDBPath     string `mapstructure:"duckdb_path"`
 }
 
 // Normalize converts single rpc_url to rpc_urls array for backward compatibility

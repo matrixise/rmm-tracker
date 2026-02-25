@@ -1,3 +1,10 @@
+# Storage backend: "postgres" (default) or "duckdb"
+# storage_backend = "postgres"
+
+# DuckDB file path (only used when storage_backend = "duckdb")
+# Use empty string "" for in-memory database (data lost on exit)
+# duckdb_path = "./rmm-tracker.duckdb"
+
 # Multiple RPC endpoints for high availability (recommended for production)
 rpc_urls = [
     "https://rpc.gnosischain.com",
