@@ -12,11 +12,11 @@ import (
 
 // Handler holds dependencies for API handlers.
 type Handler struct {
-	store storage.Storer
+	store storage.Querier
 }
 
 // NewHandler creates a new Handler.
-func NewHandler(store storage.Storer) *Handler {
+func NewHandler(store storage.Querier) *Handler {
 	return &Handler{store: store}
 }
 
