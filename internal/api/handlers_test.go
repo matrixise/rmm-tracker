@@ -20,14 +20,16 @@ import (
 // mockStore implements storage.Storer for testing.
 // Set only the function fields you need for each test.
 type mockStore struct {
-	getBalancesFn       func(ctx context.Context, wallet, symbol string, limit int) ([]storage.TokenBalance, error)
-	getDailyBalancesFn  func(ctx context.Context, wallet string) ([]storage.DailyBalance, error)
-	getDailyReportFn    func(ctx context.Context, wallet string, days int) ([]storage.DailyReport, error)
-	getWeeklyBalancesFn func(ctx context.Context, wallet string) ([]storage.WeeklyBalance, error)
-	getWeeklyReportFn   func(ctx context.Context, wallet string, weeks int) ([]storage.WeeklyReport, error)
-	getWalletsFn        func(ctx context.Context) ([]string, error)
-	pingFn              func(ctx context.Context) error
-	batchInsertFn       func(ctx context.Context, balances []storage.TokenBalance) error
+	getBalancesFn          func(ctx context.Context, wallet, symbol string, limit int) ([]storage.TokenBalance, error)
+	getDailyBalancesFn     func(ctx context.Context, wallet string) ([]storage.DailyBalance, error)
+	getDailyPeriodYieldFn  func(ctx context.Context, wallet string, days int) ([]storage.PeriodYield, error)
+	getDailyReportFn       func(ctx context.Context, wallet string, days int) ([]storage.DailyReport, error)
+	getWeeklyBalancesFn    func(ctx context.Context, wallet string) ([]storage.WeeklyBalance, error)
+	getWeeklyPeriodYieldFn func(ctx context.Context, wallet string, weeks int) ([]storage.PeriodYield, error)
+	getWeeklyReportFn      func(ctx context.Context, wallet string, weeks int) ([]storage.WeeklyReport, error)
+	getWalletsFn           func(ctx context.Context) ([]string, error)
+	pingFn                 func(ctx context.Context) error
+	batchInsertFn          func(ctx context.Context, balances []storage.TokenBalance) error
 }
 
 func (m *mockStore) GetBalances(ctx context.Context, wallet, symbol string, limit int) ([]storage.TokenBalance, error) {
@@ -44,6 +46,13 @@ func (m *mockStore) GetDailyBalances(ctx context.Context, wallet string) ([]stor
 	return []storage.DailyBalance{}, nil
 }
 
+func (m *mockStore) GetDailyPeriodYield(ctx context.Context, wallet string, days int) ([]storage.PeriodYield, error) {
+	if m.getDailyPeriodYieldFn != nil {
+		return m.getDailyPeriodYieldFn(ctx, wallet, days)
+	}
+	return []storage.PeriodYield{}, nil
+}
+
 func (m *mockStore) GetDailyReport(ctx context.Context, wallet string, days int) ([]storage.DailyReport, error) {
 	if m.getDailyReportFn != nil {
 		return m.getDailyReportFn(ctx, wallet, days)
@@ -56,6 +65,13 @@ func (m *mockStore) GetWeeklyBalances(ctx context.Context, wallet string) ([]sto
 		return m.getWeeklyBalancesFn(ctx, wallet)
 	}
 	return []storage.WeeklyBalance{}, nil
+}
+
+func (m *mockStore) GetWeeklyPeriodYield(ctx context.Context, wallet string, weeks int) ([]storage.PeriodYield, error) {
+	if m.getWeeklyPeriodYieldFn != nil {
+		return m.getWeeklyPeriodYieldFn(ctx, wallet, weeks)
+	}
+	return []storage.PeriodYield{}, nil
 }
 
 func (m *mockStore) GetWeeklyReport(ctx context.Context, wallet string, weeks int) ([]storage.WeeklyReport, error) {

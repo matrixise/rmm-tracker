@@ -214,6 +214,106 @@ func (s *Store) GetDailyReport(ctx context.Context, wallet string, days int) ([]
 	return computeDailyReport(symbolOrder, bySymbol), nil
 }
 
+// GetDailyPeriodYield returns the total yield per token over the last N day buckets for a wallet.
+// days must be >= 2 and <= 365.
+func (s *Store) GetDailyPeriodYield(ctx context.Context, wallet string, days int) ([]PeriodYield, error) {
+	if days < 2 {
+		return nil, fmt.Errorf("days must be >= 2")
+	}
+	rows, err := s.pool.Query(ctx, `
+		WITH ranked AS (
+			SELECT DISTINCT ON (day_bucket, symbol)
+				day_bucket,
+				symbol, token_address, balance
+			FROM token_balances
+			WHERE wallet = $1
+			ORDER BY day_bucket DESC, symbol, queried_at DESC
+		),
+		recent_days AS (
+			SELECT day_bucket FROM ranked
+			GROUP BY day_bucket
+			ORDER BY day_bucket DESC
+			LIMIT $2
+		)
+		SELECT r.symbol, r.token_address, r.day_bucket, r.balance
+		FROM ranked r
+		WHERE r.day_bucket IN (SELECT day_bucket FROM recent_days)
+		ORDER BY r.symbol, r.day_bucket DESC`,
+		wallet, days,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	bySymbol := make(map[string][]dayEntry)
+	symbolOrder := []string{}
+	for rows.Next() {
+		var e dayEntry
+		if err := rows.Scan(&e.symbol, &e.tokenAddress, &e.dayBucket, &e.balance); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		if _, seen := bySymbol[e.symbol]; !seen {
+			symbolOrder = append(symbolOrder, e.symbol)
+		}
+		bySymbol[e.symbol] = append(bySymbol[e.symbol], e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return computeDailyPeriodYield(symbolOrder, bySymbol), nil
+}
+
+// GetWeeklyPeriodYield returns the total yield per token over the last N week buckets for a wallet.
+// weeks must be >= 2 and <= 52.
+func (s *Store) GetWeeklyPeriodYield(ctx context.Context, wallet string, weeks int) ([]PeriodYield, error) {
+	if weeks < 2 {
+		return nil, fmt.Errorf("weeks must be >= 2")
+	}
+	rows, err := s.pool.Query(ctx, `
+		WITH ranked AS (
+			SELECT DISTINCT ON (week_bucket, symbol)
+				week_bucket,
+				symbol, token_address, balance
+			FROM token_balances
+			WHERE wallet = $1
+			ORDER BY week_bucket DESC, symbol, queried_at DESC
+		),
+		recent_weeks AS (
+			SELECT week_bucket FROM ranked
+			GROUP BY week_bucket
+			ORDER BY week_bucket DESC
+			LIMIT $2
+		)
+		SELECT r.symbol, r.token_address, r.week_bucket, r.balance
+		FROM ranked r
+		WHERE r.week_bucket IN (SELECT week_bucket FROM recent_weeks)
+		ORDER BY r.symbol, r.week_bucket DESC`,
+		wallet, weeks,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	bySymbol := make(map[string][]weekEntry)
+	symbolOrder := []string{}
+	for rows.Next() {
+		var e weekEntry
+		if err := rows.Scan(&e.symbol, &e.tokenAddress, &e.weekBucket, &e.balance); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		if _, seen := bySymbol[e.symbol]; !seen {
+			symbolOrder = append(symbolOrder, e.symbol)
+		}
+		bySymbol[e.symbol] = append(bySymbol[e.symbol], e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return computeWeeklyPeriodYield(symbolOrder, bySymbol), nil
+}
+
 // GetWeeklyBalances returns the last recorded balance per (week, symbol) for a wallet,
 // ordered by week descending.
 // Uses the stored week_bucket column + idx_token_balances_wallet_wbucket_symbol to avoid

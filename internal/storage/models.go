@@ -53,6 +53,18 @@ type DailyReport struct {
 	APY             decimal.Decimal `json:"apy"`
 }
 
+// PeriodYield represents the total yield for a token over a covered period.
+type PeriodYield struct {
+	Symbol        string          `json:"symbol"`
+	TokenAddress  string          `json:"token_address"`
+	FromDate      time.Time       `json:"from_date"`
+	ToDate        time.Time       `json:"to_date"`
+	StartBalance  decimal.Decimal `json:"start_balance"`
+	EndBalance    decimal.Decimal `json:"end_balance"`
+	Change        decimal.Decimal `json:"change"`
+	ChangePercent decimal.Decimal `json:"change_percent"`
+}
+
 // WeeklyReport represents the balance comparison between current and previous week for a token.
 type WeeklyReport struct {
 	Symbol          string          `json:"symbol"`
