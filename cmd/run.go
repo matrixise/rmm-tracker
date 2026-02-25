@@ -291,7 +291,7 @@ func logRPCConnection(rpcURLs []string) {
 	}
 }
 
-func processAllWallets(ctx context.Context, cfg *config.Config, client *blockchain.Client, store *storage.Store) error {
+func processAllWallets(ctx context.Context, cfg *config.Config, client *blockchain.Client, store storage.Commander) error {
 	for _, walletAddr := range cfg.Wallets {
 		// Check for cancellation
 		select {

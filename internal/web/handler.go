@@ -12,12 +12,12 @@ import (
 
 // WebHandler holds dependencies for web UI handlers.
 type WebHandler struct {
-	store   storage.Storer
+	store   storage.Querier
 	checker *health.Checker
 }
 
 // NewWebHandler creates a new WebHandler.
-func NewWebHandler(store storage.Storer, checker *health.Checker) *WebHandler {
+func NewWebHandler(store storage.Querier, checker *health.Checker) *WebHandler {
 	return &WebHandler{store: store, checker: checker}
 }
 

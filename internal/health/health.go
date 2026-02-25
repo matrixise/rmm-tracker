@@ -28,7 +28,7 @@ type BuildInfo struct {
 
 // Checker performs health checks on application dependencies
 type Checker struct {
-	store          *storage.Store
+	store          storage.Pinger
 	client         *blockchain.Client
 	scheduler      SchedulerInterface
 	buildInfo      BuildInfo
@@ -39,7 +39,7 @@ type Checker struct {
 }
 
 // NewChecker creates a new health checker
-func NewChecker(store *storage.Store, client *blockchain.Client, scheduler SchedulerInterface, interval time.Duration, buildInfo BuildInfo) *Checker {
+func NewChecker(store storage.Pinger, client *blockchain.Client, scheduler SchedulerInterface, interval time.Duration, buildInfo BuildInfo) *Checker {
 	return &Checker{
 		store:     store,
 		client:    client,

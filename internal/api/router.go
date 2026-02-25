@@ -31,7 +31,7 @@ func slogLogger(next http.Handler) http.Handler {
 
 // NewRouter creates a Chi router with all application routes.
 // When enableWeb is true, the web UI is mounted at "/" using the provided store and checker.
-func NewRouter(healthHandler http.HandlerFunc, apiHandler *Handler, checker *health.Checker, enableWeb bool, store storage.Storer) *chi.Mux {
+func NewRouter(healthHandler http.HandlerFunc, apiHandler *Handler, checker *health.Checker, enableWeb bool, store storage.Querier) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(slogLogger)
 	r.Use(middleware.Recoverer)
