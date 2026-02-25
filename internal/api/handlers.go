@@ -176,6 +176,78 @@ func (h *Handler) GetDailyReport(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetWeeklyPeriodYield handles GET /api/v1/wallets/{wallet}/yield/weekly
+// Optional query param: weeks (integer 2-52, default 8)
+func (h *Handler) GetWeeklyPeriodYield(w http.ResponseWriter, r *http.Request) {
+	wallet := chi.URLParam(r, "wallet")
+	if wallet == "" {
+		http.Error(w, "wallet parameter required", http.StatusBadRequest)
+		return
+	}
+
+	weeks := 8
+	if weeksStr := r.URL.Query().Get("weeks"); weeksStr != "" {
+		v, err := strconv.Atoi(weeksStr)
+		if err != nil || v < 2 || v > 52 {
+			http.Error(w, "weeks must be an integer between 2 and 52", http.StatusBadRequest)
+			return
+		}
+		weeks = v
+	}
+
+	yield, err := h.store.GetWeeklyPeriodYield(r.Context(), wallet, weeks)
+	if err != nil {
+		slog.Error("GetWeeklyPeriodYield query failed", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if yield == nil {
+		yield = []storage.PeriodYield{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(yield); err != nil {
+		slog.Error("GetWeeklyPeriodYield encode failed", "error", err)
+	}
+}
+
+// GetDailyPeriodYield handles GET /api/v1/wallets/{wallet}/yield/daily
+// Optional query param: days (integer 2-365, default 31)
+func (h *Handler) GetDailyPeriodYield(w http.ResponseWriter, r *http.Request) {
+	wallet := chi.URLParam(r, "wallet")
+	if wallet == "" {
+		http.Error(w, "wallet parameter required", http.StatusBadRequest)
+		return
+	}
+
+	days := 31
+	if daysStr := r.URL.Query().Get("days"); daysStr != "" {
+		v, err := strconv.Atoi(daysStr)
+		if err != nil || v < 2 || v > 365 {
+			http.Error(w, "days must be an integer between 2 and 365", http.StatusBadRequest)
+			return
+		}
+		days = v
+	}
+
+	yield, err := h.store.GetDailyPeriodYield(r.Context(), wallet, days)
+	if err != nil {
+		slog.Error("GetDailyPeriodYield query failed", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if yield == nil {
+		yield = []storage.PeriodYield{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(yield); err != nil {
+		slog.Error("GetDailyPeriodYield encode failed", "error", err)
+	}
+}
+
 // GetWallets handles GET /api/v1/wallets
 func (h *Handler) GetWallets(w http.ResponseWriter, r *http.Request) {
 	wallets, err := h.store.GetWallets(r.Context())

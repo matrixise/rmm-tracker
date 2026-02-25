@@ -67,6 +67,40 @@ func computeDailyReport(symbolOrder []string, bySymbol map[string][]dayEntry) []
 	return results
 }
 
+// computeDailyPeriodYield computes the total yield per token over the full set of day buckets.
+// bySymbol maps symbol → []dayEntry ordered day_bucket DESC (entries[0] = most recent).
+// The yield spans from the oldest bucket's balance to the most recent bucket's balance.
+func computeDailyPeriodYield(symbolOrder []string, bySymbol map[string][]dayEntry) []PeriodYield {
+	hundred := decimal.NewFromInt(100)
+	var results []PeriodYield
+	for _, sym := range symbolOrder {
+		entries := bySymbol[sym]
+		if len(entries) < 2 {
+			continue
+		}
+		newest := entries[0]
+		oldest := entries[len(entries)-1]
+		end := newest.balance
+		start := oldest.balance
+		change := end.Sub(start)
+		var changePct decimal.Decimal
+		if !start.IsZero() {
+			changePct = change.Div(start).Mul(hundred)
+		}
+		results = append(results, PeriodYield{
+			Symbol:        sym,
+			TokenAddress:  newest.tokenAddress,
+			FromDate:      oldest.dayBucket,
+			ToDate:        newest.dayBucket,
+			StartBalance:  start,
+			EndBalance:    end,
+			Change:        change,
+			ChangePercent: changePct,
+		})
+	}
+	return results
+}
+
 // weekEntry holds one data point for a token returned by the weekly CTE query.
 // Rows are ordered week_bucket DESC (newest first) within each symbol group.
 type weekEntry struct {
@@ -74,6 +108,40 @@ type weekEntry struct {
 	tokenAddress string
 	weekBucket   time.Time
 	balance      decimal.Decimal
+}
+
+// computeWeeklyPeriodYield computes the total yield per token over the full set of week buckets.
+// bySymbol maps symbol → []weekEntry ordered week_bucket DESC (entries[0] = most recent).
+// The yield spans from the oldest bucket's balance to the most recent bucket's balance.
+func computeWeeklyPeriodYield(symbolOrder []string, bySymbol map[string][]weekEntry) []PeriodYield {
+	hundred := decimal.NewFromInt(100)
+	var results []PeriodYield
+	for _, sym := range symbolOrder {
+		entries := bySymbol[sym]
+		if len(entries) < 2 {
+			continue
+		}
+		newest := entries[0]
+		oldest := entries[len(entries)-1]
+		end := newest.balance
+		start := oldest.balance
+		change := end.Sub(start)
+		var changePct decimal.Decimal
+		if !start.IsZero() {
+			changePct = change.Div(start).Mul(hundred)
+		}
+		results = append(results, PeriodYield{
+			Symbol:        sym,
+			TokenAddress:  newest.tokenAddress,
+			FromDate:      oldest.weekBucket,
+			ToDate:        newest.weekBucket.Add(7 * 24 * time.Hour),
+			StartBalance:  start,
+			EndBalance:    end,
+			Change:        change,
+			ChangePercent: changePct,
+		})
+	}
+	return results
 }
 
 // computeWeeklyReport builds a WeeklyReport for each symbol from pre-grouped rows.
