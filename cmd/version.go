@@ -11,6 +11,7 @@ var (
 	Version   = "dev"
 	GitCommit = "unknown"
 	BuildTime = "unknown"
+	GitBranch = "unknown"
 )
 
 var versionCmd = &cobra.Command{
@@ -19,6 +20,7 @@ var versionCmd = &cobra.Command{
 	Long:  `Display version, git commit, and build time information.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("rmm-tracker %s\n", Version)
+		fmt.Printf("Branch: %s\n", GitBranch)
 		fmt.Printf("Commit: %s\n", GitCommit)
 		fmt.Printf("Built: %s\n", BuildTime)
 	},

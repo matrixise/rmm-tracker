@@ -25,6 +25,7 @@ RUN if [ "$ENABLE_LINT" = "true" ]; then \
 
 # Build args for version info
 ARG VERSION=dev
+ARG GIT_BRANCH=unknown
 ARG GIT_COMMIT=unknown
 ARG BUILD_TIME=unknown
 
@@ -32,7 +33,7 @@ ARG BUILD_TIME=unknown
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags "-X github.com/matrixise/rmm-tracker/cmd.Version=${VERSION} -X github.com/matrixise/rmm-tracker/cmd.GitCommit=${GIT_COMMIT} -X github.com/matrixise/rmm-tracker/cmd.BuildTime=${BUILD_TIME}" \
+    -ldflags "-X github.com/matrixise/rmm-tracker/cmd.Version=${VERSION} -X github.com/matrixise/rmm-tracker/cmd.GitBranch=${GIT_BRANCH} -X github.com/matrixise/rmm-tracker/cmd.GitCommit=${GIT_COMMIT} -X github.com/matrixise/rmm-tracker/cmd.BuildTime=${BUILD_TIME}" \
     -o rmm-tracker .
 
 FROM alpine:latest

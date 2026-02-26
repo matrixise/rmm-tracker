@@ -22,6 +22,7 @@ type SchedulerInterface interface {
 // BuildInfo holds version information set at build time via ldflags
 type BuildInfo struct {
 	Version   string `json:"version"`
+	GitBranch string `json:"git_branch"`
 	GitCommit string `json:"git_commit"`
 	BuildTime string `json:"build_time"`
 }

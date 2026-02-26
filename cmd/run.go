@@ -167,6 +167,7 @@ func runTracker(cmd *cobra.Command, args []string) error {
 
 	buildInfo := health.BuildInfo{
 		Version:   Version,
+		GitBranch: GitBranch,
 		GitCommit: GitCommit,
 		BuildTime: BuildTime,
 	}

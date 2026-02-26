@@ -56,6 +56,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ github.event.workflow_run.head_branch }}
+            GIT_BRANCH=${{ github.event.workflow_run.head_branch }}
             GIT_COMMIT=${{ github.event.workflow_run.head_sha }}
             BUILD_TIME=${{ github.event.workflow_run.updated_at }}
 
