@@ -21,6 +21,9 @@ vars:
   COVERAGE_FILE: coverage.out
   DOCKER_HUB_USER: matrixise
   DOCKER_HUB_IMAGE: "{{.DOCKER_HUB_USER}}/rmm-tracker"
+  DOCKER_BUILDER_IMAGE: "{{.DOCKER_HUB_USER}}/rmm-tracker-builder"
+  GO_VERSION:
+    sh: grep '^go ' go.mod | awk '{print $2}' | cut -d. -f1-2
 
 tasks:
   default:
@@ -107,6 +110,36 @@ tasks:
     desc: Show migration status
     cmds:
       - DATABASE_URL={{.DATABASE_URL}} go run . migrate status
+
+  # ── Docker builder base image ─────────────────────────
+
+  docker:builder:build:
+    desc: Build the builder base image (pre-downloads Go modules)
+    deps: [docker:buildx:setup]
+    cmds:
+      - |
+        docker buildx build \
+          --builder rmm-builder \
+          --platform linux/amd64 \
+          --file Dockerfile.builder \
+          -t {{.DOCKER_BUILDER_IMAGE}}:go{{.GO_VERSION}} \
+          -t {{.DOCKER_BUILDER_IMAGE}}:latest \
+          --load \
+          .
+
+  docker:builder:push:
+    desc: Build and push builder base image to Docker Hub
+    deps: [docker:buildx:setup]
+    cmds:
+      - |
+        docker buildx build \
+          --builder rmm-builder \
+          --platform linux/amd64 \
+          --file Dockerfile.builder \
+          -t {{.DOCKER_BUILDER_IMAGE}}:go{{.GO_VERSION}} \
+          -t {{.DOCKER_BUILDER_IMAGE}}:latest \
+          --push \
+          .
 
   # ── Docker ─────────────────────────────────────────────
 

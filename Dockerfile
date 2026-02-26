@@ -1,6 +1,10 @@
 # syntax=docker/dockerfile:1.21
+#
+# --platform=$BUILDPLATFORM ensures the builder stage always runs natively on
+# the CI host (linux/amd64), even when cross-compiling for arm64.  QEMU is
+# only needed for the final `apk add` step, not for the Go compilation.
 
-FROM golang:1.26-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
 ARG ENABLE_LINT=false
 
@@ -28,9 +32,15 @@ ARG GIT_BRANCH=unknown
 ARG GIT_COMMIT=unknown
 ARG BUILD_TIME=unknown
 
-# Build
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux go build \
+# Injected by Docker buildx: TARGETOS=linux, TARGETARCH=amd64|arm64
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
+# CGO_ENABLED=0 + GOOS/GOARCH → pure-Go cross-compilation running natively on
+# the build host.  No QEMU emulation needed for the compilation itself.
+# Cache key is per-TARGETARCH so amd64 and arm64 caches don't collide.
+RUN --mount=type=cache,target=/root/.cache/go-build,id=go-build-${TARGETARCH} \
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -ldflags "-X github.com/matrixise/rmm-tracker/cmd.Version=${VERSION} -X github.com/matrixise/rmm-tracker/cmd.GitBranch=${GIT_BRANCH} -X github.com/matrixise/rmm-tracker/cmd.GitCommit=${GIT_COMMIT} -X github.com/matrixise/rmm-tracker/cmd.BuildTime=${BUILD_TIME}" \
     -o rmm-tracker .
 
