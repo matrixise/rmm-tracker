@@ -15,10 +15,10 @@ const dashboardCacheTTL = time.Minute
 
 // Store manages PostgreSQL operations
 type Store struct {
-	pool            *pgxpool.Pool
-	dashCache       DashboardSummary
-	dashCachedAt    time.Time
-	dashCacheMu     sync.RWMutex
+	pool         *pgxpool.Pool
+	dashCache    DashboardSummary
+	dashCachedAt time.Time
+	dashCacheMu  sync.RWMutex
 }
 
 // NewStore creates a new PostgreSQL store with connection pooling
