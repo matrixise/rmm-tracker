@@ -1,10 +1,14 @@
 package storage
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // Commander is the write-side interface (used by the blockchain tracker).
 type Commander interface {
 	BatchInsertBalances(ctx context.Context, balances []TokenBalance) error
+	SetLastRun(ctx context.Context, at time.Time, succeeded bool) error
 }
 
 // Querier is the read-side interface (used by API, web UI).
@@ -17,6 +21,7 @@ type Querier interface {
 	GetWeeklyPeriodYield(ctx context.Context, wallet string, weeks int) ([]PeriodYield, error)
 	GetWeeklyReport(ctx context.Context, wallet string, weeks int) ([]WeeklyReport, error)
 	GetWallets(ctx context.Context) ([]string, error)
+	GetLastRun(ctx context.Context) (time.Time, bool, error)
 }
 
 // Pinger is a connectivity probe interface (used by health checks).

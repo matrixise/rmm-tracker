@@ -141,6 +141,10 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	defer store.Close()
 	slog.Info("PostgreSQL connection established")
 
+	// Typed interface variables — enforce CQRS at the wiring layer.
+	var writer storage.Commander = store
+	var reader storage.Querier = store
+
 	// One-shot mode: neither --http nor --daemon
 	if httpAddr == "" && !enableDaemon {
 		client, err := blockchain.NewClient(cfg.RPCUrls)
@@ -150,7 +154,7 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		}
 		defer client.Close()
 		logRPCConnection(cfg.RPCUrls)
-		return processAllWallets(ctx, cfg, client, store)
+		return processAllWallets(ctx, cfg, client, writer)
 	}
 
 	// Connect to blockchain only when daemon mode is active
@@ -189,9 +193,11 @@ func runTracker(cmd *cobra.Command, args []string) error {
 
 		// jobFunc references healthChecker which is set after scheduler creation
 		jobFunc := func(jobCtx context.Context) error {
-			err := processAllWallets(jobCtx, cfg, client, store)
+			err := processAllWallets(jobCtx, cfg, client, writer)
+			succeeded := err == nil
+			_ = writer.SetLastRun(jobCtx, time.Now(), succeeded) // best-effort
 			if healthChecker != nil {
-				healthChecker.UpdateLastRun(err == nil)
+				healthChecker.UpdateLastRun(succeeded)
 			}
 			return err
 		}
@@ -226,8 +232,8 @@ func runTracker(cmd *cobra.Command, args []string) error {
 	}
 
 	if httpAddr != "" {
-		apiHandler := api.NewHandler(store)
-		router := api.NewRouter(healthChecker.Handler(), apiHandler, healthChecker, enableWeb, store)
+		apiHandler := api.NewHandler(reader)
+		router := api.NewRouter(healthChecker.Handler(), apiHandler, healthChecker, enableWeb, reader)
 
 		httpServer := &http.Server{
 			Addr:              httpAddr,

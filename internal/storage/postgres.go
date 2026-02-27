@@ -403,6 +403,29 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) (
 	return computeWeeklyReport(symbolOrder, bySymbol), nil
 }
 
+// SetLastRun upserts the singleton tracker_metadata row with the latest run time and outcome.
+func (s *Store) SetLastRun(ctx context.Context, at time.Time, succeeded bool) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO tracker_metadata (id, last_run_at, succeeded)
+		VALUES (1, $1, $2)
+		ON CONFLICT (id) DO UPDATE
+			SET last_run_at = EXCLUDED.last_run_at,
+			    succeeded   = EXCLUDED.succeeded`,
+		at, succeeded,
+	)
+	return err
+}
+
+// GetLastRun reads the singleton tracker_metadata row.
+func (s *Store) GetLastRun(ctx context.Context) (time.Time, bool, error) {
+	var at time.Time
+	var ok bool
+	err := s.pool.QueryRow(ctx, `
+		SELECT last_run_at, succeeded FROM tracker_metadata WHERE id = 1`).
+		Scan(&at, &ok)
+	return at, ok, err
+}
+
 // GetWallets returns distinct wallet addresses stored in the database.
 func (s *Store) GetWallets(ctx context.Context) ([]string, error) {
 	rows, err := s.pool.Query(ctx, `SELECT DISTINCT wallet FROM token_balances ORDER BY wallet`)

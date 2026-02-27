@@ -27,9 +27,15 @@ type BuildInfo struct {
 	BuildTime string `json:"build_time"`
 }
 
+// storeIface is the storage subset required by the health checker.
+type storeIface interface {
+	storage.Pinger
+	GetLastRun(ctx context.Context) (time.Time, bool, error)
+}
+
 // Checker performs health checks on application dependencies
 type Checker struct {
-	store          storage.Pinger
+	store          storeIface
 	client         *blockchain.Client
 	scheduler      SchedulerInterface
 	buildInfo      BuildInfo
@@ -40,7 +46,7 @@ type Checker struct {
 }
 
 // NewChecker creates a new health checker
-func NewChecker(store storage.Pinger, client *blockchain.Client, scheduler SchedulerInterface, interval time.Duration, buildInfo BuildInfo) *Checker {
+func NewChecker(store storeIface, client *blockchain.Client, scheduler SchedulerInterface, interval time.Duration, buildInfo BuildInfo) *Checker {
 	return &Checker{
 		store:     store,
 		client:    client,
@@ -71,6 +77,8 @@ const (
 type HealthResponse struct {
 	Status    CheckStatus            `json:"status"`
 	Timestamp time.Time              `json:"timestamp"`
+	LastRunAt *time.Time             `json:"last_run_at,omitempty"`
+	LastRunOK *bool                  `json:"last_run_ok,omitempty"`
 	Checks    map[string]CheckDetail `json:"checks"`
 	Uptime    string                 `json:"uptime,omitempty"`
 	Build     BuildInfo              `json:"build"`
@@ -116,13 +124,20 @@ func (c *Checker) Check(ctx context.Context) HealthResponse {
 		}
 	}
 
-	return HealthResponse{
+	resp := HealthResponse{
 		Status:    overallStatus,
 		Timestamp: time.Now(),
 		Checks:    checks,
 		Uptime:    time.Since(startTime).Round(time.Second).String(),
 		Build:     c.buildInfo,
 	}
+
+	if at, ok, err := c.store.GetLastRun(ctx); err == nil && !at.IsZero() {
+		resp.LastRunAt = &at
+		resp.LastRunOK = &ok
+	}
+
+	return resp
 }
 
 // checkDatabase verifies PostgreSQL connectivity

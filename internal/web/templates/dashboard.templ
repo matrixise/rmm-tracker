@@ -23,7 +23,9 @@ templ Dashboard() {
 				</div>
 				<div class="bg-white rounded-lg shadow p-4">
 					<p class="text-xs text-gray-500 uppercase tracking-wide">Last update</p>
-					<p class="text-sm font-medium text-gray-900 mt-1" x-text="lastUpdate"></p>
+					<p class="text-sm font-medium mt-1"
+					   :class="lastRunOK === false ? 'text-red-600' : 'text-gray-900'"
+					   x-text="lastUpdate"></p>
 				</div>
 			</div>
 		</div>
@@ -32,7 +34,7 @@ templ Dashboard() {
 			return {
 				loading: true,
 				status: '—', statusColor: 'bg-gray-400',
-				walletCount: 0, tokenCount: 0, lastUpdate: '—',
+				walletCount: 0, tokenCount: 0, lastUpdate: '—', lastRunOK: null,
 				async load() {
 					const [health, wallets, balances] = await Promise.all([
 						fetch('/health').then(r => r.json()),
@@ -47,7 +49,8 @@ templ Dashboard() {
 					this.walletCount = Array.isArray(wallets) ? wallets.length : 0
 					const seen = new Set((Array.isArray(balances) ? balances : []).map(b => b.symbol))
 					this.tokenCount = seen.size
-					this.lastUpdate = (health && health.timestamp) ? new Date(health.timestamp).toLocaleString() : '—'
+					this.lastUpdate = (health && health.last_run_at) ? new Date(health.last_run_at).toLocaleString() : '—'
+				this.lastRunOK = health ? health.last_run_ok : null
 					this.loading = false
 				}
 			}
