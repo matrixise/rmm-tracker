@@ -17,6 +17,7 @@ type Querier interface {
 	GetDailyBalances(ctx context.Context, wallet string) ([]DailyBalance, error)
 	GetDailyPeriodYield(ctx context.Context, wallet string, days int) ([]PeriodYield, error)
 	GetDailyReport(ctx context.Context, wallet string, days int) ([]DailyReport, error)
+	GetDashboardSummary(ctx context.Context) (DashboardSummary, error)
 	GetWeeklyBalances(ctx context.Context, wallet string) ([]WeeklyBalance, error)
 	GetWeeklyPeriodYield(ctx context.Context, wallet string, weeks int) ([]PeriodYield, error)
 	GetWeeklyReport(ctx context.Context, wallet string, weeks int) ([]WeeklyReport, error)

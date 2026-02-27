@@ -24,6 +24,7 @@ type mockStore struct {
 	getDailyBalancesFn     func(ctx context.Context, wallet string) ([]storage.DailyBalance, error)
 	getDailyPeriodYieldFn  func(ctx context.Context, wallet string, days int) ([]storage.PeriodYield, error)
 	getDailyReportFn       func(ctx context.Context, wallet string, days int) ([]storage.DailyReport, error)
+	getDashboardSummaryFn  func(ctx context.Context) (storage.DashboardSummary, error)
 	getWeeklyBalancesFn    func(ctx context.Context, wallet string) ([]storage.WeeklyBalance, error)
 	getWeeklyPeriodYieldFn func(ctx context.Context, wallet string, weeks int) ([]storage.PeriodYield, error)
 	getWeeklyReportFn      func(ctx context.Context, wallet string, weeks int) ([]storage.WeeklyReport, error)
@@ -58,6 +59,13 @@ func (m *mockStore) GetDailyReport(ctx context.Context, wallet string, days int)
 		return m.getDailyReportFn(ctx, wallet, days)
 	}
 	return []storage.DailyReport{}, nil
+}
+
+func (m *mockStore) GetDashboardSummary(ctx context.Context) (storage.DashboardSummary, error) {
+	if m.getDashboardSummaryFn != nil {
+		return m.getDashboardSummaryFn(ctx)
+	}
+	return storage.DashboardSummary{}, nil
 }
 
 func (m *mockStore) GetWeeklyBalances(ctx context.Context, wallet string) ([]storage.WeeklyBalance, error) {
@@ -114,7 +122,7 @@ func (m *mockStore) Close() {}
 
 // newRouter builds a test router wired to the given mock store.
 func newRouter(ms *mockStore) http.Handler {
-	h := NewHandler(ms)
+	h := NewHandler(ms, nil)
 	return NewRouter(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}, h, nil, false, ms)
@@ -650,6 +658,45 @@ func TestGetWallets_EmptyResult_ReturnsEmptyArray(t *testing.T) {
 }
 
 // =============================================================================
+// GetDashboard
+// =============================================================================
+
+func TestGetDashboard_ReturnsCounts(t *testing.T) {
+	ms := &mockStore{
+		getDashboardSummaryFn: func(_ context.Context) (storage.DashboardSummary, error) {
+			return storage.DashboardSummary{WalletCount: 3, TokenCount: 4}, nil
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/dashboard")
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
+
+	result := decodeJSON[map[string]any](t, rec)
+	assert.Equal(t, float64(3), result["wallet_count"])
+	assert.Equal(t, float64(4), result["token_count"])
+	// checker is nil in tests so status should be empty string
+	assert.Equal(t, "", result["status"])
+}
+
+func TestGetDashboard_StoreError_Returns500(t *testing.T) {
+	ms := &mockStore{
+		getDashboardSummaryFn: func(_ context.Context) (storage.DashboardSummary, error) {
+			return storage.DashboardSummary{}, errors.New("db error")
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/dashboard")
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestGetDashboard_ContentTypeJSON(t *testing.T) {
+	rec := get(t, newRouter(&mockStore{}), "/api/v1/dashboard")
+	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
+}
+
+// =============================================================================
 // Content-Type
 // =============================================================================
 
@@ -658,6 +705,7 @@ func TestAllEndpoints_ContentTypeJSON(t *testing.T) {
 	router := newRouter(ms)
 
 	endpoints := []string{
+		"/api/v1/dashboard",
 		"/api/v1/balances",
 		"/api/v1/wallets",
 		"/api/v1/wallets/0xWALLET/balances/weekly",

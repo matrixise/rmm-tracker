@@ -65,6 +65,12 @@ type PeriodYield struct {
 	ChangePercent decimal.Decimal `json:"change_percent"`
 }
 
+// DashboardSummary holds aggregated counts for the dashboard endpoint.
+type DashboardSummary struct {
+	WalletCount int
+	TokenCount  int
+}
+
 // WeeklyReport represents the balance comparison between current and previous week for a token.
 type WeeklyReport struct {
 	Symbol          string          `json:"symbol"`

@@ -426,6 +426,16 @@ func (s *Store) GetLastRun(ctx context.Context) (time.Time, bool, error) {
 	return at, ok, err
 }
 
+// GetDashboardSummary returns the count of distinct wallets and token symbols.
+func (s *Store) GetDashboardSummary(ctx context.Context) (DashboardSummary, error) {
+	var d DashboardSummary
+	err := s.pool.QueryRow(ctx, `
+		SELECT COUNT(DISTINCT wallet), COUNT(DISTINCT symbol)
+		FROM token_balances`).
+		Scan(&d.WalletCount, &d.TokenCount)
+	return d, err
+}
+
 // GetWallets returns distinct wallet addresses stored in the database.
 func (s *Store) GetWallets(ctx context.Context) ([]string, error) {
 	rows, err := s.pool.Query(ctx, `SELECT DISTINCT wallet FROM token_balances ORDER BY wallet`)

@@ -40,6 +40,7 @@ func NewRouter(healthHandler http.HandlerFunc, apiHandler *Handler, checker *hea
 	r.Get("/health", healthHandler)
 
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/dashboard", apiHandler.GetDashboard)
 		r.Get("/balances", apiHandler.GetBalances)
 		r.Get("/wallets", apiHandler.GetWallets)
 		r.Get("/wallets/{wallet}/balances/weekly", apiHandler.GetWeeklyBalances)

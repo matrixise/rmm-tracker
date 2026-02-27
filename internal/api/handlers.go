@@ -5,19 +5,58 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/matrixise/rmm-tracker/internal/health"
 	"github.com/matrixise/rmm-tracker/internal/storage"
 )
 
 // Handler holds dependencies for API handlers.
 type Handler struct {
-	store storage.Querier
+	store   storage.Querier
+	checker *health.Checker
 }
 
 // NewHandler creates a new Handler.
-func NewHandler(store storage.Querier) *Handler {
-	return &Handler{store: store}
+func NewHandler(store storage.Querier, checker *health.Checker) *Handler {
+	return &Handler{store: store, checker: checker}
+}
+
+// DashboardResponse is the JSON response for GET /api/v1/dashboard.
+type DashboardResponse struct {
+	Status      string     `json:"status"`
+	LastRunAt   *time.Time `json:"last_run_at,omitempty"`
+	LastRunOK   *bool      `json:"last_run_ok,omitempty"`
+	WalletCount int        `json:"wallet_count"`
+	TokenCount  int        `json:"token_count"`
+}
+
+// GetDashboard handles GET /api/v1/dashboard
+func (h *Handler) GetDashboard(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	resp := DashboardResponse{}
+
+	if h.checker != nil {
+		hr := h.checker.Check(ctx)
+		resp.Status = string(hr.Status)
+		resp.LastRunAt = hr.LastRunAt
+		resp.LastRunOK = hr.LastRunOK
+	}
+
+	summary, err := h.store.GetDashboardSummary(ctx)
+	if err != nil {
+		slog.Error("GetDashboard query failed", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	resp.WalletCount = summary.WalletCount
+	resp.TokenCount = summary.TokenCount
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("GetDashboard encode failed", "error", err)
+	}
 }
 
 // GetBalances handles GET /api/v1/balances

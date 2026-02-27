@@ -36,21 +36,16 @@ templ Dashboard() {
 				status: '—', statusColor: 'bg-gray-400',
 				walletCount: 0, tokenCount: 0, lastUpdate: '—', lastRunOK: null,
 				async load() {
-					const [health, wallets, balances] = await Promise.all([
-						fetch('/health').then(r => r.json()),
-						fetch('/api/v1/wallets').then(r => r.json()),
-						fetch('/api/v1/balances?limit=100').then(r => r.json()),
-					])
-					const s = (health && health.status) || 'unknown'
-					if (s === 'ok') { this.status = 'ok'; this.statusColor = 'bg-green-500' }
+					const dash = await fetch('/api/v1/dashboard').then(r => r.json())
+					const s = (dash && dash.status) || 'unknown'
+					if (s === 'ok')            { this.status = 'ok';       this.statusColor = 'bg-green-500' }
 					else if (s === 'degraded') { this.status = 'degraded'; this.statusColor = 'bg-yellow-500' }
-					else if (s === 'error') { this.status = 'error'; this.statusColor = 'bg-red-500' }
-					else { this.status = s; this.statusColor = 'bg-gray-400' }
-					this.walletCount = Array.isArray(wallets) ? wallets.length : 0
-					const seen = new Set((Array.isArray(balances) ? balances : []).map(b => b.symbol))
-					this.tokenCount = seen.size
-					this.lastUpdate = (health && health.last_run_at) ? new Date(health.last_run_at).toLocaleString() : '—'
-				this.lastRunOK = health ? health.last_run_ok : null
+					else if (s === 'error')    { this.status = 'error';    this.statusColor = 'bg-red-500' }
+					else                       { this.status = s;          this.statusColor = 'bg-gray-400' }
+					this.walletCount = dash ? dash.wallet_count : 0
+					this.tokenCount  = dash ? dash.token_count  : 0
+					this.lastUpdate  = (dash && dash.last_run_at) ? new Date(dash.last_run_at).toLocaleString() : '—'
+					this.lastRunOK   = dash ? dash.last_run_ok : null
 					this.loading = false
 				}
 			}
