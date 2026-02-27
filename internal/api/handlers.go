@@ -105,6 +105,31 @@ func (h *Handler) GetBalances(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetLatestBalances handles GET /api/v1/wallets/{wallet}/balances/latest
+func (h *Handler) GetLatestBalances(w http.ResponseWriter, r *http.Request) {
+	wallet := chi.URLParam(r, "wallet")
+	if wallet == "" {
+		http.Error(w, "wallet parameter required", http.StatusBadRequest)
+		return
+	}
+
+	balances, err := h.store.GetLatestBalances(r.Context(), wallet)
+	if err != nil {
+		slog.Error("GetLatestBalances query failed", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if balances == nil {
+		balances = []storage.LatestBalance{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(balances); err != nil {
+		slog.Error("GetLatestBalances encode failed", "error", err)
+	}
+}
+
 // GetWeeklyBalances handles GET /api/v1/wallets/{wallet}/balances/weekly
 func (h *Handler) GetWeeklyBalances(w http.ResponseWriter, r *http.Request) {
 	wallet := chi.URLParam(r, "wallet")

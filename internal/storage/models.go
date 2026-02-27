@@ -65,6 +65,14 @@ type PeriodYield struct {
 	ChangePercent decimal.Decimal `json:"change_percent"`
 }
 
+// LatestBalance represents the most recent recorded balance for a token in a wallet.
+type LatestBalance struct {
+	Symbol       string          `json:"symbol"`
+	TokenAddress string          `json:"token_address"`
+	Balance      decimal.Decimal `json:"balance"`
+	QueriedAt    time.Time       `json:"queried_at"`
+}
+
 // DashboardSummary holds aggregated counts for the dashboard endpoint.
 type DashboardSummary struct {
 	WalletCount int
