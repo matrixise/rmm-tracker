@@ -35,23 +35,35 @@ type DashboardResponse struct {
 // GetDashboard handles GET /api/v1/dashboard
 func (h *Handler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	resp := DashboardResponse{}
 
+	// Run summary query concurrently with the (cheap) status read.
+	type summaryResult struct {
+		s   storage.DashboardSummary
+		err error
+	}
+	summCh := make(chan summaryResult, 1)
+	go func() {
+		s, err := h.store.GetDashboardSummary(ctx)
+		summCh <- summaryResult{s, err}
+	}()
+
+	resp := DashboardResponse{}
 	if h.checker != nil {
-		hr := h.checker.Check(ctx)
-		resp.Status = string(hr.Status)
-		resp.LastRunAt = hr.LastRunAt
-		resp.LastRunOK = hr.LastRunOK
+		// QuickStatus: in-memory only, no DB ping, no RPC call.
+		qs := h.checker.QuickStatus(ctx)
+		resp.Status = string(qs.Status)
+		resp.LastRunAt = qs.LastRunAt
+		resp.LastRunOK = qs.LastRunOK
 	}
 
-	summary, err := h.store.GetDashboardSummary(ctx)
-	if err != nil {
-		slog.Error("GetDashboard query failed", "error", err)
+	sr := <-summCh
+	if sr.err != nil {
+		slog.Error("GetDashboard query failed", "error", sr.err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	resp.WalletCount = summary.WalletCount
-	resp.TokenCount = summary.TokenCount
+	resp.WalletCount = sr.s.WalletCount
+	resp.TokenCount = sr.s.TokenCount
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

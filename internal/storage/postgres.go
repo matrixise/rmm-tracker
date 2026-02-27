@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	shop "github.com/jackc/pgx-shopspring-decimal"
@@ -10,9 +11,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const dashboardCacheTTL = time.Minute
+
 // Store manages PostgreSQL operations
 type Store struct {
-	pool *pgxpool.Pool
+	pool            *pgxpool.Pool
+	dashCache       DashboardSummary
+	dashCachedAt    time.Time
+	dashCacheMu     sync.RWMutex
 }
 
 // NewStore creates a new PostgreSQL store with connection pooling
@@ -404,6 +410,7 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) (
 }
 
 // SetLastRun upserts the singleton tracker_metadata row with the latest run time and outcome.
+// It also invalidates the dashboard cache so the next request picks up fresh counts.
 func (s *Store) SetLastRun(ctx context.Context, at time.Time, succeeded bool) error {
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO tracker_metadata (id, last_run_at, succeeded)
@@ -413,6 +420,9 @@ func (s *Store) SetLastRun(ctx context.Context, at time.Time, succeeded bool) er
 			    succeeded   = EXCLUDED.succeeded`,
 		at, succeeded,
 	)
+	s.dashCacheMu.Lock()
+	s.dashCachedAt = time.Time{}
+	s.dashCacheMu.Unlock()
 	return err
 }
 
@@ -427,13 +437,31 @@ func (s *Store) GetLastRun(ctx context.Context) (time.Time, bool, error) {
 }
 
 // GetDashboardSummary returns the count of distinct wallets and token symbols.
+// Results are cached for dashboardCacheTTL and invalidated by SetLastRun.
 func (s *Store) GetDashboardSummary(ctx context.Context) (DashboardSummary, error) {
+	s.dashCacheMu.RLock()
+	if !s.dashCachedAt.IsZero() && time.Since(s.dashCachedAt) < dashboardCacheTTL {
+		d := s.dashCache
+		s.dashCacheMu.RUnlock()
+		return d, nil
+	}
+	s.dashCacheMu.RUnlock()
+
 	var d DashboardSummary
 	err := s.pool.QueryRow(ctx, `
 		SELECT COUNT(DISTINCT wallet), COUNT(DISTINCT symbol)
 		FROM token_balances`).
 		Scan(&d.WalletCount, &d.TokenCount)
-	return d, err
+	if err != nil {
+		return d, err
+	}
+
+	s.dashCacheMu.Lock()
+	s.dashCache = d
+	s.dashCachedAt = time.Now()
+	s.dashCacheMu.Unlock()
+
+	return d, nil
 }
 
 // GetWallets returns distinct wallet addresses stored in the database.

@@ -284,6 +284,44 @@ func (c *Checker) checkDaemon() CheckDetail {
 	}
 }
 
+// QuickStatusResult holds the lightweight status info used by the dashboard.
+type QuickStatusResult struct {
+	Status    CheckStatus
+	LastRunAt *time.Time
+	LastRunOK *bool
+}
+
+// QuickStatus returns status and last-run info without any network probing.
+// It reads in-memory state (O(1)) and falls back to a single DB read only on
+// the very first call after startup (when the in-memory timestamp is zero).
+func (c *Checker) QuickStatus(ctx context.Context) QuickStatusResult {
+	c.mu.RLock()
+	lastRunTime := c.lastRunTime
+	lastRunSuccess := c.lastRunSuccess
+	c.mu.RUnlock()
+
+	res := QuickStatusResult{Status: StatusOK}
+
+	if c.interval > 0 && !lastRunTime.IsZero() {
+		if !lastRunSuccess {
+			res.Status = StatusDegraded
+		} else if time.Since(lastRunTime) > c.interval*2 {
+			res.Status = StatusDegraded
+		}
+	}
+
+	if !lastRunTime.IsZero() {
+		t := lastRunTime
+		res.LastRunAt = &t
+		res.LastRunOK = &lastRunSuccess
+	} else if at, ok, err := c.store.GetLastRun(ctx); err == nil && !at.IsZero() {
+		res.LastRunAt = &at
+		res.LastRunOK = &ok
+	}
+
+	return res
+}
+
 // Handler returns an http.HandlerFunc for the health endpoint
 func (c *Checker) Handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
