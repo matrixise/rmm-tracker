@@ -3,10 +3,28 @@ package templates
 templ Wallets() {
 	@Layout("Wallets") {
 		<h1 class="text-2xl font-bold text-gray-900 mb-6">Wallets</h1>
-		<div x-data="walletList()" x-init="load()">
+		<div x-data="walletSearch()">
+			<!-- Search form (always visible) -->
+			<form @submit.prevent="search()" class="flex gap-2 mb-6">
+				<input
+					x-model="address"
+					type="text"
+					placeholder="0x..."
+					class="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+				/>
+				<button
+					type="submit"
+					class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+				>Search</button>
+			</form>
+			<!-- Loading -->
 			<p x-show="loading" class="text-gray-500">Loading...</p>
-			<p x-show="!loading && balances.length === 0" class="text-gray-500">No balance records found.</p>
-			<div x-show="!loading && balances.length > 0" class="bg-white shadow rounded-lg overflow-hidden">
+			<!-- Error -->
+			<p x-show="error" x-text="error" class="text-red-600"></p>
+			<!-- No results -->
+			<p x-show="searched && !loading && balances.length === 0 && !error" class="text-gray-500">No balance records found for this address.</p>
+			<!-- Results table -->
+			<div x-show="searched && !loading && balances.length > 0" class="bg-white shadow rounded-lg overflow-hidden">
 				<table class="min-w-full divide-y divide-gray-200">
 					<thead class="bg-gray-50">
 						<tr>
@@ -36,12 +54,27 @@ templ Wallets() {
 			if (!addr || addr.length <= 12) return addr
 			return addr.slice(0, 6) + '...' + addr.slice(-4)
 		}
-		function walletList() {
+		function walletSearch() {
 			return {
-				loading: true, balances: [],
-				async load() {
-					this.balances = await fetch('/api/v1/balances?limit=100').then(r => r.json()) || []
+				address: '',
+				loading: false,
+				searched: false,
+				balances: [],
+				error: null,
+				async search() {
+					if (!this.address.trim()) return
+					this.loading = true
+					this.error = null
+					this.searched = false
+					try {
+						const res = await fetch('/api/v1/balances?wallet=' + encodeURIComponent(this.address.trim()) + '&limit=100')
+						this.balances = await res.json() || []
+					} catch (e) {
+						this.error = 'Failed to load balances.'
+						this.balances = []
+					}
 					this.loading = false
+					this.searched = true
 				}
 			}
 		}

@@ -464,6 +464,36 @@ func (s *Store) GetDashboardSummary(ctx context.Context) (DashboardSummary, erro
 	return d, nil
 }
 
+// GetLatestBalances returns the most recent balance for each token symbol for a wallet.
+func (s *Store) GetLatestBalances(ctx context.Context, wallet string) ([]LatestBalance, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT DISTINCT ON (symbol)
+			symbol,
+			token_address,
+			balance,
+			queried_at
+		FROM token_balances
+		WHERE wallet = $1
+		ORDER BY symbol, queried_at DESC`,
+		wallet,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var results []LatestBalance
+	for rows.Next() {
+		var b LatestBalance
+		if err := rows.Scan(&b.Symbol, &b.TokenAddress, &b.Balance, &b.QueriedAt); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		results = append(results, b)
+	}
+
+	return results, rows.Err()
+}
+
 // GetWallets returns distinct wallet addresses stored in the database.
 func (s *Store) GetWallets(ctx context.Context) ([]string, error) {
 	rows, err := s.pool.Query(ctx, `SELECT DISTINCT wallet FROM token_balances ORDER BY wallet`)
