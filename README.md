@@ -1,18 +1,18 @@
-# RMM Tracker
+# 📊 RMM Tracker
 
 A Go application that monitors ERC-20 token balances on Gnosis Chain and persists results to PostgreSQL. Designed for RealT RMM (Real Money Market) tokens: armmXDAI, armmUSDC, and their debt variants.
 
-## Features
+## ✨ Features
 
-- **Web UI**: Dashboard, wallet list with search, wallet detail with current balances
-- **REST API**: JSON endpoints for balances, reports, and yield analytics
-- **Daemon mode**: Clock-aligned scheduling (e.g. `5m` runs at :00, :05, :10…)
-- **RPC failover**: Automatic failover between multiple Gnosis Chain RPC endpoints
-- **Parallel processing**: Concurrent token queries per wallet using goroutines
-- **Structured logging**: JSON logs compatible with ELK, Loki, and similar stacks
-- **Docker ready**: Multi-arch images (amd64 + arm64) published to Docker Hub
+- 🖥️ **Web UI**: Dashboard, wallet list with search, wallet detail with current balances
+- 🔌 **REST API**: JSON endpoints for balances, reports, and yield analytics
+- ⏰ **Daemon mode**: Clock-aligned scheduling (e.g. `5m` runs at :00, :05, :10…)
+- 🔀 **RPC failover**: Automatic failover between multiple Gnosis Chain RPC endpoints
+- ⚡ **Parallel processing**: Concurrent token queries per wallet using goroutines
+- 📋 **Structured logging**: JSON logs compatible with ELK, Loki, and similar stacks
+- 🐳 **Docker ready**: Multi-arch images (amd64 + arm64) published to Docker Hub
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -91,7 +91,7 @@ DATABASE_URL="..." ./rmm-tracker validate-config
 ./rmm-tracker version
 ```
 
-### Docker
+### 🐳 Docker
 
 ```bash
 # Start PostgreSQL + app
@@ -113,7 +113,7 @@ task docker:logs     # Follow application logs
 task docker:down     # Stop all services
 ```
 
-## Web UI
+## 🖥️ Web UI
 
 Available in daemon mode at `http://localhost:8080`.
 
@@ -123,7 +123,7 @@ Available in daemon mode at `http://localhost:8080`.
 | `/wallets` | Wallet list with address search |
 | `/wallets/{wallet}` | Wallet detail — current balances per token |
 
-## REST API
+## 🔌 REST API
 
 All endpoints are prefixed with `/api/v1`.
 
@@ -165,6 +165,15 @@ GET /api/v1/wallets/{wallet}/report/daily?days=31
 
 Week-over-week or day-over-day comparison. `weeks`: 2–52 (default 2). `days`: 2–365 (default 31).
 
+### Yield
+
+```http
+GET /api/v1/wallets/{wallet}/yield/weekly?weeks=2
+GET /api/v1/wallets/{wallet}/yield/daily?days=31
+```
+
+Yield analytics per wallet. `weeks`: 2–52 (default 2). `days`: 2–365 (default 31).
+
 ### Wallets
 
 ```http
@@ -181,7 +190,7 @@ GET /health
 
 Returns HTTP 200 if healthy, 503 otherwise. Checks database connection, RPC endpoints, and scheduler status.
 
-## Architecture
+## 🏗️ Architecture
 
 ```text
 rmm-tracker/
@@ -212,7 +221,7 @@ rmm-tracker/
 | Decimals | shopspring/decimal |
 | Validation | validator/v10 |
 
-## Configuration Reference
+## ⚙️ Configuration Reference
 
 ### Environment Variables
 
@@ -238,7 +247,7 @@ interval = "0 9,17 * * 1-5"   # 9am and 5pm, weekdays only
 interval = "*/7 * * * *"       # every 7 minutes (non-aligned)
 ```
 
-## Development
+## 🛠️ Development
 
 This project uses [Task](https://taskfile.dev/). Run `task --list` for all available tasks.
 
@@ -260,7 +269,7 @@ prek install   # Install hooks into .git/hooks/
 prek run -a    # Run all hooks manually
 ```
 
-## CI/CD
+## 🔄 CI/CD
 
 GitHub Actions workflows:
 
@@ -272,7 +281,7 @@ GitHub Actions workflows:
 | **Claude Code Review** | Every PR |
 | **Claude Code** (`@claude`) | Comments mentioning `@claude` |
 
-## Documentation
+## 📚 Documentation
 
 - [`docs/MIGRATION.md`](docs/MIGRATION.md) — upgrade guide between versions
 - [`docs/SCHEDULER-IMPLEMENTATION.md`](docs/SCHEDULER-IMPLEMENTATION.md) — scheduling system details
