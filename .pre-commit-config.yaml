@@ -32,3 +32,17 @@ repos:
     rev: v2.10.1
     hooks:
       - id: golangci-lint
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.21.0
+    hooks:
+      - id: markdownlint-cli2
+        args: ["--config", ".markdownlint.yml"]
+        exclude: ^(CLAUDE\.md|IMPLEMENTATION\.md|docs/.*)$
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        types: [markdown]
+        exclude: ^docs/
