@@ -12,7 +12,40 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+      ci: ${{ steps.filter.outputs.ci }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+      markdown: ${{ steps.filter.outputs.markdown }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3.0.2
+        id: filter
+        with:
+          filters: |
+            go:
+              - "**/*.go"
+              - "go.mod"
+              - "go.sum"
+              - "Taskfile.yml"
+              - ".golangci.yml"
+            ci:
+              - ".github/workflows/test.yml"
+            migrations:
+              - "internal/storage/migrations/**"
+            markdown:
+              - "**/*.md"
+
   lint:
+    needs: changes
+    if: github.ref_type == 'tag' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -48,8 +81,9 @@ jobs:
           version: v2.10.1
 
   test:
+    needs: changes
+    if: github.ref_type == 'tag' || needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -78,7 +112,13 @@ jobs:
           retention-days: 7
 
   integration-test:
-    needs: test
+    needs: [changes, test]
+    # Runs when Go code changes (test job ran) OR when only migrations changed
+    # (test job was skipped but schema changes still need integration validation).
+    if: >-
+      github.ref_type == 'tag' ||
+      needs.changes.outputs.go == 'true' ||
+      needs.changes.outputs.migrations == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -108,3 +148,38 @@ jobs:
         env:
           DATABASE_URL: postgres://rmm:rmm@localhost:5432/rmm_tracker?sslmode=disable
         run: go test -v -race -tags integration -timeout 60s ./internal/storage/...
+
+  markdown-lint:
+    needs: changes
+    if: needs.changes.outputs.markdown == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v22.0.0
+        with:
+          globs: "**/*.md"
+          config: ".markdownlint.yml"
+
+  spell-check:
+    needs: changes
+    if: needs.changes.outputs.markdown == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Spell check
+        uses: codespell-project/actions-codespell@v2.2
+        with:
+          check_filenames: true
+          path: .
+          # Restrict to markdown only — domain-specific tokens in Go/SQL would
+          # produce false positives (armmXDAI, armmUSDC, pgx, goose, gocron…)
+          skip: "*.go,*.sum,*.mod,*.sql,*.toml,*.yml,*.yaml,*.json,*.html,*.templ"
