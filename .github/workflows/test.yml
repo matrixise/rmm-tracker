@@ -111,6 +111,8 @@ jobs:
 
   integration-test:
     needs: [changes, test]
+    # Runs when Go code changes (test job ran) OR when only migrations changed
+    # (test job was skipped but schema changes still need integration validation).
     if: >-
       github.ref_type == 'tag' ||
       needs.changes.outputs.go == 'true' ||
@@ -176,3 +178,6 @@ jobs:
         with:
           check_filenames: true
           path: .
+          # Restrict to markdown only — domain-specific tokens in Go/SQL would
+          # produce false positives (armmXDAI, armmUSDC, pgx, goose, gocron…)
+          skip: "*.go,*.sum,*.mod,*.sql,*.toml,*.yml,*.yaml,*.json,*.html,*.templ"
