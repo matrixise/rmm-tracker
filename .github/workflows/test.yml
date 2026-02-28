@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       go: ${{ steps.filter.outputs.go }}
+      ci: ${{ steps.filter.outputs.ci }}
       migrations: ${{ steps.filter.outputs.migrations }}
       markdown: ${{ steps.filter.outputs.markdown }}
     steps:
@@ -35,6 +36,7 @@ jobs:
               - "go.sum"
               - "Taskfile.yml"
               - ".golangci.yml"
+            ci:
               - ".github/workflows/test.yml"
             migrations:
               - "internal/storage/migrations/**"
@@ -43,7 +45,7 @@ jobs:
 
   lint:
     needs: changes
-    if: github.ref_type == 'tag' || needs.changes.outputs.go == 'true'
+    if: github.ref_type == 'tag' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
