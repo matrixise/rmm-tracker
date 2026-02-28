@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script de test pour les variables d'environnement
+# Test script for environment variable overrides
 
 echo "=== Test 1: Override RPC_URL ==="
 RPC_URL="https://rpc.gnosischain.com" \
@@ -20,7 +20,7 @@ DATABASE_URL="postgres://rmm:rmm@localhost:5432/rmm_tracker?sslmode=disable" \
 ./rmm-tracker
 
 echo ""
-echo "=== Test 4: Adresse invalide (doit échouer) ==="
+echo "=== Test 4: Invalid address (should fail) ==="
 WALLETS="0xinvalid" \
 DATABASE_URL="postgres://rmm:rmm@localhost:5432/rmm_tracker?sslmode=disable" \
 ./rmm-tracker
