@@ -202,6 +202,19 @@ func sampleDailyReport() storage.DailyReport {
 	}
 }
 
+func samplePeriodYield() storage.PeriodYield {
+	return storage.PeriodYield{
+		Symbol:        "armmUSDC",
+		TokenAddress:  "0xTOKEN",
+		FromDate:      time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+		ToDate:        time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
+		StartBalance:  decimal.RequireFromString("10000"),
+		EndBalance:    decimal.RequireFromString("10250"),
+		Change:        decimal.RequireFromString("250"),
+		ChangePercent: decimal.RequireFromString("2.5"),
+	}
+}
+
 func sampleWeeklyReport() storage.WeeklyReport {
 	return storage.WeeklyReport{
 		Symbol:          "armmUSDC",
@@ -624,6 +637,218 @@ func TestGetDailyReport_EmptyResult_ReturnsEmptyArray(t *testing.T) {
 }
 
 // =============================================================================
+// GetWeeklyPeriodYield
+// =============================================================================
+
+func TestGetWeeklyPeriodYield_DefaultWeeks_Returns200(t *testing.T) {
+	var capturedWeeks int
+	ms := &mockStore{
+		getWeeklyPeriodYieldFn: func(_ context.Context, wallet string, weeks int) ([]storage.PeriodYield, error) {
+			capturedWeeks = weeks
+			assert.Equal(t, "0xWALLET", wallet)
+			return []storage.PeriodYield{samplePeriodYield()}, nil
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/weekly")
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, 8, capturedWeeks, "default weeks must be 8")
+
+	result := decodeJSON[[]map[string]any](t, rec)
+	require.Len(t, result, 1)
+	r := result[0]
+	assert.Contains(t, r, "symbol")
+	assert.Contains(t, r, "token_address")
+	assert.Contains(t, r, "from_date")
+	assert.Contains(t, r, "to_date")
+	assert.Contains(t, r, "start_balance")
+	assert.Contains(t, r, "end_balance")
+	assert.Contains(t, r, "change")
+	assert.Contains(t, r, "change_percent")
+}
+
+func TestGetWeeklyPeriodYield_CustomWeeks_PassedToStore(t *testing.T) {
+	var capturedWeeks int
+	ms := &mockStore{
+		getWeeklyPeriodYieldFn: func(_ context.Context, _ string, weeks int) ([]storage.PeriodYield, error) {
+			capturedWeeks = weeks
+			return []storage.PeriodYield{}, nil
+		},
+	}
+
+	get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/weekly?weeks=4")
+	assert.Equal(t, 4, capturedWeeks)
+}
+
+func TestGetWeeklyPeriodYield_InvalidWeeks_Returns400(t *testing.T) {
+	tests := []struct {
+		name  string
+		query string
+	}{
+		{"weeks=1 (below minimum)", "?weeks=1"},
+		{"weeks=0", "?weeks=0"},
+		{"weeks=53 (above max)", "?weeks=53"},
+		{"weeks=abc (non-integer)", "?weeks=abc"},
+		{"weeks=-1 (negative)", "?weeks=-1"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := get(t, newRouter(&mockStore{}), "/api/v1/wallets/0xWALLET/yield/weekly"+tt.query)
+			assert.Equal(t, http.StatusBadRequest, rec.Code, "expected 400 for %s", tt.query)
+		})
+	}
+}
+
+func TestGetWeeklyPeriodYield_BoundaryWeeks(t *testing.T) {
+	ms := &mockStore{
+		getWeeklyPeriodYieldFn: func(_ context.Context, _ string, _ int) ([]storage.PeriodYield, error) {
+			return []storage.PeriodYield{}, nil
+		},
+	}
+
+	t.Run("weeks=2 (minimum)", func(t *testing.T) {
+		rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/weekly?weeks=2")
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+
+	t.Run("weeks=52 (maximum)", func(t *testing.T) {
+		rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/weekly?weeks=52")
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+}
+
+func TestGetWeeklyPeriodYield_StoreError_Returns500(t *testing.T) {
+	ms := &mockStore{
+		getWeeklyPeriodYieldFn: func(_ context.Context, _ string, _ int) ([]storage.PeriodYield, error) {
+			return nil, errors.New("connection lost")
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/weekly")
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestGetWeeklyPeriodYield_EmptyResult_ReturnsEmptyArray(t *testing.T) {
+	ms := &mockStore{
+		getWeeklyPeriodYieldFn: func(_ context.Context, _ string, _ int) ([]storage.PeriodYield, error) {
+			return nil, nil
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/weekly")
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Len(t, decodeJSON[[]any](t, rec), 0)
+}
+
+// =============================================================================
+// GetDailyPeriodYield
+// =============================================================================
+
+func TestGetDailyPeriodYield_DefaultDays_Returns200(t *testing.T) {
+	var capturedDays int
+	ms := &mockStore{
+		getDailyPeriodYieldFn: func(_ context.Context, wallet string, days int) ([]storage.PeriodYield, error) {
+			capturedDays = days
+			assert.Equal(t, "0xWALLET", wallet)
+			return []storage.PeriodYield{samplePeriodYield()}, nil
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/daily")
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, 31, capturedDays, "default days must be 31")
+
+	result := decodeJSON[[]map[string]any](t, rec)
+	require.Len(t, result, 1)
+	r := result[0]
+	assert.Contains(t, r, "symbol")
+	assert.Contains(t, r, "token_address")
+	assert.Contains(t, r, "from_date")
+	assert.Contains(t, r, "to_date")
+	assert.Contains(t, r, "start_balance")
+	assert.Contains(t, r, "end_balance")
+	assert.Contains(t, r, "change")
+	assert.Contains(t, r, "change_percent")
+}
+
+func TestGetDailyPeriodYield_CustomDays_PassedToStore(t *testing.T) {
+	var capturedDays int
+	ms := &mockStore{
+		getDailyPeriodYieldFn: func(_ context.Context, _ string, days int) ([]storage.PeriodYield, error) {
+			capturedDays = days
+			return []storage.PeriodYield{}, nil
+		},
+	}
+
+	get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/daily?days=14")
+	assert.Equal(t, 14, capturedDays)
+}
+
+func TestGetDailyPeriodYield_InvalidDays_Returns400(t *testing.T) {
+	tests := []struct {
+		name  string
+		query string
+	}{
+		{"days=1 (below minimum)", "?days=1"},
+		{"days=0", "?days=0"},
+		{"days=366 (above max)", "?days=366"},
+		{"days=abc (non-integer)", "?days=abc"},
+		{"days=-1 (negative)", "?days=-1"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := get(t, newRouter(&mockStore{}), "/api/v1/wallets/0xWALLET/yield/daily"+tt.query)
+			assert.Equal(t, http.StatusBadRequest, rec.Code, "expected 400 for %s", tt.query)
+		})
+	}
+}
+
+func TestGetDailyPeriodYield_BoundaryDays(t *testing.T) {
+	ms := &mockStore{
+		getDailyPeriodYieldFn: func(_ context.Context, _ string, _ int) ([]storage.PeriodYield, error) {
+			return []storage.PeriodYield{}, nil
+		},
+	}
+
+	t.Run("days=2 (minimum)", func(t *testing.T) {
+		rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/daily?days=2")
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+
+	t.Run("days=365 (maximum)", func(t *testing.T) {
+		rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/daily?days=365")
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+}
+
+func TestGetDailyPeriodYield_StoreError_Returns500(t *testing.T) {
+	ms := &mockStore{
+		getDailyPeriodYieldFn: func(_ context.Context, _ string, _ int) ([]storage.PeriodYield, error) {
+			return nil, errors.New("connection lost")
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/daily")
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestGetDailyPeriodYield_EmptyResult_ReturnsEmptyArray(t *testing.T) {
+	ms := &mockStore{
+		getDailyPeriodYieldFn: func(_ context.Context, _ string, _ int) ([]storage.PeriodYield, error) {
+			return nil, nil
+		},
+	}
+
+	rec := get(t, newRouter(ms), "/api/v1/wallets/0xWALLET/yield/daily")
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Len(t, decodeJSON[[]any](t, rec), 0)
+}
+
+// =============================================================================
 // GetWallets
 // =============================================================================
 
@@ -720,6 +945,8 @@ func TestAllEndpoints_ContentTypeJSON(t *testing.T) {
 		"/api/v1/wallets/0xWALLET/report/weekly",
 		"/api/v1/wallets/0xWALLET/balances/daily",
 		"/api/v1/wallets/0xWALLET/report/daily",
+		"/api/v1/wallets/0xWALLET/yield/weekly",
+		"/api/v1/wallets/0xWALLET/yield/daily",
 	}
 
 	for _, path := range endpoints {
