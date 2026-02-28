@@ -165,15 +165,6 @@ GET /api/v1/wallets/{wallet}/report/daily?days=31
 
 Week-over-week or day-over-day comparison. `weeks`: 2–52 (default 2). `days`: 2–365 (default 31).
 
-### Yield
-
-```
-GET /api/v1/wallets/{wallet}/yield/weekly?weeks=8
-GET /api/v1/wallets/{wallet}/yield/daily?days=31
-```
-
-Period yield per token. `weeks`: 2–52 (default 8). `days`: 2–365 (default 31).
-
 ### Wallets
 
 ```
