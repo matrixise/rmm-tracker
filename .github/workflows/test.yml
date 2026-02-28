@@ -162,7 +162,11 @@ jobs:
       - name: Lint Markdown
         uses: DavidAnson/markdownlint-cli2-action@v22.0.0
         with:
-          globs: "**/*.md"
+          globs: |
+            **/*.md
+            !CLAUDE.md
+            !IMPLEMENTATION.md
+            !docs/**
           config: ".markdownlint.yml"
 
   spell-check:

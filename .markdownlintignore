@@ -1,0 +1,8 @@
+# Internal tool configuration — not user-facing docs
+CLAUDE.md
+
+# Legacy and internal documents
+IMPLEMENTATION.md
+docs/IMPROVEMENTS.md
+docs/DOCKER_HUB_SETUP.md
+docs/MIGRATION.md
