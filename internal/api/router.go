@@ -43,6 +43,7 @@ func NewRouter(healthHandler http.HandlerFunc, apiHandler *Handler, checker *hea
 		r.Get("/dashboard", apiHandler.GetDashboard)
 		r.Get("/balances", apiHandler.GetBalances)
 		r.Get("/wallets", apiHandler.GetWallets)
+		r.Get("/wallets/{wallet}/balances/latest", apiHandler.GetLatestBalances)
 		r.Get("/wallets/{wallet}/balances/weekly", apiHandler.GetWeeklyBalances)
 		r.Get("/wallets/{wallet}/report/weekly", apiHandler.GetWeeklyReport)
 		r.Get("/wallets/{wallet}/balances/daily", apiHandler.GetDailyBalances)

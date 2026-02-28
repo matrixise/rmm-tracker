@@ -14,6 +14,7 @@ type Commander interface {
 // Querier is the read-side interface (used by API, web UI).
 type Querier interface {
 	GetBalances(ctx context.Context, wallet, symbol string, limit int) ([]TokenBalance, error)
+	GetLatestBalances(ctx context.Context, wallet string) ([]LatestBalance, error)
 	GetDailyBalances(ctx context.Context, wallet string) ([]DailyBalance, error)
 	GetDailyPeriodYield(ctx context.Context, wallet string, days int) ([]PeriodYield, error)
 	GetDailyReport(ctx context.Context, wallet string, days int) ([]DailyReport, error)

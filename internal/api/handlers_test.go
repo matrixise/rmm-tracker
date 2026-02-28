@@ -28,6 +28,7 @@ type mockStore struct {
 	getWeeklyBalancesFn    func(ctx context.Context, wallet string) ([]storage.WeeklyBalance, error)
 	getWeeklyPeriodYieldFn func(ctx context.Context, wallet string, weeks int) ([]storage.PeriodYield, error)
 	getWeeklyReportFn      func(ctx context.Context, wallet string, weeks int) ([]storage.WeeklyReport, error)
+	getLatestBalancesFn    func(ctx context.Context, wallet string) ([]storage.LatestBalance, error)
 	getWalletsFn           func(ctx context.Context) ([]string, error)
 	pingFn                 func(ctx context.Context) error
 	batchInsertFn          func(ctx context.Context, balances []storage.TokenBalance) error
@@ -87,6 +88,13 @@ func (m *mockStore) GetWeeklyReport(ctx context.Context, wallet string, weeks in
 		return m.getWeeklyReportFn(ctx, wallet, weeks)
 	}
 	return []storage.WeeklyReport{}, nil
+}
+
+func (m *mockStore) GetLatestBalances(ctx context.Context, wallet string) ([]storage.LatestBalance, error) {
+	if m.getLatestBalancesFn != nil {
+		return m.getLatestBalancesFn(ctx, wallet)
+	}
+	return []storage.LatestBalance{}, nil
 }
 
 func (m *mockStore) GetWallets(ctx context.Context) ([]string, error) {
