@@ -25,8 +25,12 @@ A Go application that monitors ERC-20 token balances on Gnosis Chain and persist
 ```bash
 git clone https://github.com/matrixise/rmm-tracker.git
 cd rmm-tracker
-go build -o rmm-tracker .
+task build
 ```
+
+> `task build` injects version, git branch, commit, and build time into the binary via `-ldflags`.
+> These values are exposed by `rmm-tracker version` and the `/health` endpoint.
+> A plain `go build` will leave them empty.
 
 ### Configuration
 
