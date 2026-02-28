@@ -1,75 +1,75 @@
 #!/bin/bash
 set -e
 
-echo "🚀 RMM Tracker - Déploiement rapide"
+echo "RMM Tracker - Quick deploy"
 echo
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
-    echo "❌ Docker n'est pas installé. Installez Docker d'abord:"
+    echo "Docker is not installed. Install Docker first:"
     echo "   https://docs.docker.com/get-docker/"
     exit 1
 fi
 
 if ! command -v docker compose &> /dev/null; then
-    echo "❌ Docker Compose n'est pas installé."
+    echo "Docker Compose is not installed."
     exit 1
 fi
 
 # Check if .env exists
 if [ ! -f .env ]; then
-    echo "📝 Création du fichier .env..."
+    echo "Creating .env file..."
     cp .env.example .env
     echo
-    echo "⚠️  IMPORTANT: Éditez le fichier .env avec vos paramètres:"
-    echo "   - DATABASE_URL (obligatoire)"
-    echo "   - RMM_TRACKER_RPC_URLS (recommandé)"
+    echo "IMPORTANT: Edit .env with your settings:"
+    echo "   - DATABASE_URL (required)"
+    echo "   - RMM_TRACKER_RPC_URLS (recommended)"
     echo "   - RMM_TRACKER_WALLETS"
     echo
-    echo "Puis relancez: ./deploy.sh"
+    echo "Then run again: ./deploy.sh"
     exit 0
 fi
 
 # Check if config.toml exists
 if [ ! -f config.toml ]; then
-    echo "⚠️  config.toml n'existe pas. Création depuis config.toml.example..."
+    echo "config.toml not found. Creating from config.toml.example..."
     if [ -f config.toml.example ]; then
         cp config.toml.example config.toml
     else
-        echo "❌ config.toml.example introuvable"
+        echo "config.toml.example not found"
         exit 1
     fi
 fi
 
-echo "🔨 Construction de l'image Docker..."
+echo "Building Docker image..."
 docker compose build
 
 echo
-echo "✅ Validation de la configuration..."
+echo "Validating configuration..."
 if ! docker compose run --rm app validate-config; then
-    echo "❌ Configuration invalide. Corrigez les erreurs ci-dessus."
+    echo "Invalid configuration. Fix the errors above."
     exit 1
 fi
 
 echo
-echo "🎯 Démarrage des services..."
+echo "Starting services..."
 docker compose up -d
 
 echo
-echo "⏳ Attente du démarrage (5 secondes)..."
+echo "Waiting for startup (5 seconds)..."
 sleep 5
 
 echo
-echo "📊 État des conteneurs:"
+echo "Container status:"
 docker compose ps
 
 echo
-echo "✅ Déploiement terminé !"
+echo "Deploy complete!"
 echo
-echo "📖 Commandes utiles:"
-echo "   docker compose logs -f app        # Voir les logs"
-echo "   docker compose ps                 # État des services"
-echo "   docker compose down               # Arrêter"
-echo "   docker compose restart app        # Redémarrer l'app"
-echo "   curl http://localhost:8080/health # Vérifier la santé"
+echo "Useful commands:"
+echo "   docker compose logs -f app        # Follow logs"
+echo "   docker compose ps                 # Service status"
+echo "   docker compose down               # Stop"
+echo "   docker compose restart app        # Restart app"
+echo "   curl http://localhost:8080/health # Health check"
 echo
