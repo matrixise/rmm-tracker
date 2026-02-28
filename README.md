@@ -251,6 +251,15 @@ task migrate:status         # Check migration state
 task docker:buildx:push     # Build multi-arch image and push to Docker Hub
 ```
 
+### Pre-commit hooks
+
+This project uses [prek](https://github.com/isak-larsson/prek) (a Rust-based drop-in replacement for pre-commit) to run hooks on every commit: YAML linting, Go formatting, golangci-lint, markdownlint, and spell checking.
+
+```bash
+prek install   # Install hooks into .git/hooks/
+prek run -a    # Run all hooks manually
+```
+
 ## CI/CD
 
 GitHub Actions workflows:

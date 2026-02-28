@@ -150,6 +150,18 @@ Strict rules to follow when creating or modifying `Taskfile.yml`.
 
 - Vars defined with `sh:` are evaluated **once** at task startup, not before each `cmd`. Do not assume they are re-evaluated dynamically.
 
+## Pre-commit hooks (prek)
+
+This project uses [prek](https://github.com/isak-larsson/prek), a Rust-based drop-in replacement for `pre-commit`. It is **not** `pre-commit` — always use `prek` directly.
+
+```bash
+prek install        # Install hooks into .git/hooks/
+prek run -a         # Run all hooks on all files
+prek run <hook-id>  # Run a specific hook
+```
+
+The configuration lives in `.pre-commit-config.yaml` (prek reads this format natively). Hooks include: trailing whitespace, YAML lint, gofmt, golangci-lint, markdownlint-cli2, codespell.
+
 ## Worktrees
 
 Always name worktrees at creation time to avoid random names (e.g. `structured-orbiting-duckling`).
