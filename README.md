@@ -129,7 +129,7 @@ All endpoints are prefixed with `/api/v1`.
 
 ### Dashboard
 
-```
+```http
 GET /api/v1/dashboard
 ```
 
@@ -137,19 +137,19 @@ Global summary: total wallets, tokens tracked, latest run status.
 
 ### Balances
 
-```
+```http
 GET /api/v1/balances?wallet=0x...&symbol=armmUSDC&limit=100
 ```
 
 Historical balance records. All query parameters are optional.
 
-```
+```http
 GET /api/v1/wallets/{wallet}/balances/latest
 ```
 
 Latest balance for each token of a given wallet.
 
-```
+```http
 GET /api/v1/wallets/{wallet}/balances/weekly
 GET /api/v1/wallets/{wallet}/balances/daily
 ```
@@ -158,7 +158,7 @@ One balance snapshot per week or per day.
 
 ### Reports
 
-```
+```http
 GET /api/v1/wallets/{wallet}/report/weekly?weeks=2
 GET /api/v1/wallets/{wallet}/report/daily?days=31
 ```
@@ -167,7 +167,7 @@ Week-over-week or day-over-day comparison. `weeks`: 2–52 (default 2). `days`: 
 
 ### Wallets
 
-```
+```http
 GET /api/v1/wallets
 ```
 
@@ -175,7 +175,7 @@ List of tracked wallet addresses.
 
 ### Health
 
-```
+```http
 GET /health
 ```
 
@@ -183,7 +183,7 @@ Returns HTTP 200 if healthy, 503 otherwise. Checks database connection, RPC endp
 
 ## Architecture
 
-```
+```text
 rmm-tracker/
 ├── cmd/                   # Cobra commands (run, migrate, validate-config, version)
 ├── internal/
@@ -201,7 +201,7 @@ rmm-tracker/
 **Key technologies:**
 
 | Concern | Library |
-|---|---|
+| --- | --- |
 | CLI | cobra |
 | Config | viper |
 | Database | pgx/v5 + goose |
@@ -256,7 +256,7 @@ task docker:buildx:push     # Build multi-arch image and push to Docker Hub
 GitHub Actions workflows:
 
 | Workflow | Trigger |
-|---|---|
+| --- | --- |
 | **Test** (lint, test, integration) | Go/Taskfile changes on push or PR |
 | **Markdown** (lint, spell check) | `.md` changes on PR |
 | **Docker** | Push to `main` or `v*` tags |

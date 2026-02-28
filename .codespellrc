@@ -1,0 +1,3 @@
+[codespell]
+# French words used in docs/IMPROVEMENTS.md (historical document written in French)
+ignore-words-list = adresses,adresse,invalide,exemple,exemples,connexion,complet,explicite,fonctions,termine
