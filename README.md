@@ -118,7 +118,7 @@ task docker:down     # Stop all services
 Available in daemon mode at `http://localhost:8080`.
 
 | Path | Description |
-|---|---|
+| --- | --- |
 | `/` | Dashboard — global summary |
 | `/wallets` | Wallet list with address search |
 | `/wallets/{wallet}` | Wallet detail — current balances per token |
