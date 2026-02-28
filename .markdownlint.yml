@@ -1,0 +1,14 @@
+default: true
+
+# Line length: disable — code blocks and URLs make this impractical
+MD013: false
+
+# Duplicate headings: allow in different sections (e.g. multiple "Step 1:")
+MD024:
+  siblings_only: true
+
+# Inline HTML: allow (badges, tables)
+MD033: false
+
+# First line must be a top-level heading: disable for CLAUDE.md and internal docs
+MD041: false
