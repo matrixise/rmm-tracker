@@ -110,7 +110,7 @@ func (m *mockStore) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (m *mockStore) SetLastRun(_ context.Context, _ time.Time, _ bool) error { return nil }
+func (m *mockStore) SetLastRunStatus(_ context.Context, _ bool) error { return nil }
 
 func (m *mockStore) GetLastRun(_ context.Context) (time.Time, bool, error) {
 	return time.Time{}, false, nil

@@ -409,16 +409,16 @@ func (s *Store) GetWeeklyReport(ctx context.Context, wallet string, weeks int) (
 	return computeWeeklyReport(symbolOrder, bySymbol), nil
 }
 
-// SetLastRun upserts the singleton tracker_metadata row with the latest run time and outcome.
+// SetLastRunStatus updates only the succeeded flag in tracker_metadata.
+// last_run_at is managed by BatchInsertBalances.
 // It also invalidates the dashboard cache so the next request picks up fresh counts.
-func (s *Store) SetLastRun(ctx context.Context, at time.Time, succeeded bool) error {
+func (s *Store) SetLastRunStatus(ctx context.Context, succeeded bool) error {
 	_, err := s.pool.Exec(ctx, `
-		INSERT INTO tracker_metadata (id, last_run_at, succeeded)
-		VALUES (1, $1, $2)
+		INSERT INTO tracker_metadata (id, succeeded)
+		VALUES (1, $1)
 		ON CONFLICT (id) DO UPDATE
-			SET last_run_at = EXCLUDED.last_run_at,
-			    succeeded   = EXCLUDED.succeeded`,
-		at, succeeded,
+			SET succeeded = EXCLUDED.succeeded`,
+		succeeded,
 	)
 	s.dashCacheMu.Lock()
 	s.dashCachedAt = time.Time{}

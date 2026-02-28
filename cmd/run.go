@@ -195,7 +195,7 @@ func runTracker(cmd *cobra.Command, args []string) error {
 		jobFunc := func(jobCtx context.Context) error {
 			err := processAllWallets(jobCtx, cfg, client, writer)
 			succeeded := err == nil
-			_ = writer.SetLastRun(jobCtx, time.Now(), succeeded) // best-effort
+			_ = writer.SetLastRunStatus(jobCtx, succeeded) // best-effort
 			if healthChecker != nil {
 				healthChecker.UpdateLastRun(succeeded)
 			}
