@@ -1,4 +1,4 @@
-# RMM Tracker - Token Balance Tracker
+# RMM Tracker - Token Balance Monitor
 
 A Go application that monitors ERC-20 token balances on Gnosis Chain and persists results to PostgreSQL. Specifically designed to track RealT RMM (Real Money Market) tokens including armmXDAI, armmUSDC, and their debt variants.
 
