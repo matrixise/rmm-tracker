@@ -7,8 +7,12 @@ import (
 
 // Commander is the write-side interface (used by the blockchain tracker).
 type Commander interface {
+	// BatchInsertBalances persists a batch of token balances and updates
+	// tracker_metadata.last_run_at with the MAX queried_at from the batch.
 	BatchInsertBalances(ctx context.Context, balances []TokenBalance) error
-	SetLastRun(ctx context.Context, at time.Time, succeeded bool) error
+	// SetLastRunStatus records whether the last tracker run succeeded or failed.
+	// last_run_at is managed by BatchInsertBalances; this only updates succeeded.
+	SetLastRunStatus(ctx context.Context, succeeded bool) error
 }
 
 // Querier is the read-side interface (used by API, web UI).
