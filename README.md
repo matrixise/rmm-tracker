@@ -231,7 +231,7 @@ RMM_TRACKER_RPC_URLS="url1,url2"
 RMM_TRACKER_WALLETS="0xAddr1,0xAddr2"
 RMM_TRACKER_INTERVAL="5m"
 RMM_TRACKER_LOG_LEVEL="info"           # debug, info, warn, error
-RMM_TRACKER_TIMEZONE="Europe/Paris"    # default: UTC
+RMM_TRACKER_TIMEZONE="Europe/Brussels" # default: UTC
 ```
 
 ### Scheduling
