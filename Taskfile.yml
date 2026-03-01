@@ -216,6 +216,21 @@ tasks:
     cmds:
       - docker buildx prune --builder rmm-builder -f
 
+  docker:tags:
+    desc: List published tags on Docker Hub
+    cmds:
+      - |
+        curl -s \
+          "https://hub.docker.com/v2/repositories/{{.DOCKER_HUB_IMAGE}}/tags?page_size=100" \
+          | python3 -c "
+        import sys, json
+        data = json.load(sys.stdin)
+        print(f'Tags for {{.DOCKER_HUB_IMAGE}} ({data[\"count\"]} total)')
+        print()
+        for t in data['results']:
+            print(f'  {t[\"name\"]:<30} {t[\"tag_last_pushed\"][:10]}')
+        "
+
   # ── Development ────────────────────────────────────────
 
   run:
