@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,7 +77,7 @@ func (s *Store) BatchInsertBalances(ctx context.Context, balances []TokenBalance
 			(queried_at, wallet, token_address, symbol, decimals, raw_balance, balance)
 			VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 			bal.QueriedAt,
-			bal.Wallet,
+			strings.ToLower(bal.Wallet),
 			bal.TokenAddress,
 			bal.Symbol,
 			bal.Decimals,
