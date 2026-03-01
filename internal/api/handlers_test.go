@@ -237,7 +237,7 @@ func sampleWeeklyReport() storage.WeeklyReport {
 func TestGetBalances_ReturnsBalances(t *testing.T) {
 	ms := &mockStore{
 		getBalancesFn: func(_ context.Context, wallet, symbol string, limit int) ([]storage.TokenBalance, error) {
-			assert.Equal(t, "0xABC", wallet)
+			assert.Equal(t, "0xabc", wallet)
 			assert.Equal(t, "", symbol)
 			assert.Equal(t, 100, limit)
 			return []storage.TokenBalance{sampleBalance()}, nil
@@ -335,7 +335,7 @@ func TestGetBalances_SymbolFilter(t *testing.T) {
 func TestGetWeeklyBalances_ReturnsBalances(t *testing.T) {
 	ms := &mockStore{
 		getWeeklyBalancesFn: func(_ context.Context, wallet string) ([]storage.WeeklyBalance, error) {
-			assert.Equal(t, "0xWALLET", wallet)
+			assert.Equal(t, "0xwallet", wallet)
 			return []storage.WeeklyBalance{sampleWeeklyBalance()}, nil
 		},
 	}
@@ -383,7 +383,7 @@ func TestGetWeeklyReport_DefaultWeeks_Returns200(t *testing.T) {
 	ms := &mockStore{
 		getWeeklyReportFn: func(_ context.Context, wallet string, weeks int) ([]storage.WeeklyReport, error) {
 			capturedWeeks = weeks
-			assert.Equal(t, "0xWALLET", wallet)
+			assert.Equal(t, "0xwallet", wallet)
 			return []storage.WeeklyReport{sampleWeeklyReport()}, nil
 		},
 	}
@@ -489,7 +489,7 @@ func TestGetWeeklyReport_EmptyResult_ReturnsEmptyArray(t *testing.T) {
 func TestGetDailyBalances_ReturnsBalances(t *testing.T) {
 	ms := &mockStore{
 		getDailyBalancesFn: func(_ context.Context, wallet string) ([]storage.DailyBalance, error) {
-			assert.Equal(t, "0xWALLET", wallet)
+			assert.Equal(t, "0xwallet", wallet)
 			return []storage.DailyBalance{sampleDailyBalance()}, nil
 		},
 	}
@@ -539,7 +539,7 @@ func TestGetDailyReport_DefaultDays_Returns200(t *testing.T) {
 	ms := &mockStore{
 		getDailyReportFn: func(_ context.Context, wallet string, days int) ([]storage.DailyReport, error) {
 			capturedDays = days
-			assert.Equal(t, "0xWALLET", wallet)
+			assert.Equal(t, "0xwallet", wallet)
 			return []storage.DailyReport{sampleDailyReport()}, nil
 		},
 	}
@@ -645,7 +645,7 @@ func TestGetWeeklyPeriodYield_DefaultWeeks_Returns200(t *testing.T) {
 	ms := &mockStore{
 		getWeeklyPeriodYieldFn: func(_ context.Context, wallet string, weeks int) ([]storage.PeriodYield, error) {
 			capturedWeeks = weeks
-			assert.Equal(t, "0xWALLET", wallet)
+			assert.Equal(t, "0xwallet", wallet)
 			return []storage.PeriodYield{samplePeriodYield()}, nil
 		},
 	}
@@ -751,7 +751,7 @@ func TestGetDailyPeriodYield_DefaultDays_Returns200(t *testing.T) {
 	ms := &mockStore{
 		getDailyPeriodYieldFn: func(_ context.Context, wallet string, days int) ([]storage.PeriodYield, error) {
 			capturedDays = days
-			assert.Equal(t, "0xWALLET", wallet)
+			assert.Equal(t, "0xwallet", wallet)
 			return []storage.PeriodYield{samplePeriodYield()}, nil
 		},
 	}

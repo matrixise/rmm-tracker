@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -74,7 +75,7 @@ func (h *Handler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 // GetBalances handles GET /api/v1/balances
 // Query params: wallet, symbol, limit (default 100)
 func (h *Handler) GetBalances(w http.ResponseWriter, r *http.Request) {
-	wallet := r.URL.Query().Get("wallet")
+	wallet := strings.ToLower(r.URL.Query().Get("wallet"))
 	symbol := r.URL.Query().Get("symbol")
 	limitStr := r.URL.Query().Get("limit")
 
@@ -107,7 +108,7 @@ func (h *Handler) GetBalances(w http.ResponseWriter, r *http.Request) {
 
 // GetLatestBalances handles GET /api/v1/wallets/{wallet}/balances/latest
 func (h *Handler) GetLatestBalances(w http.ResponseWriter, r *http.Request) {
-	wallet := chi.URLParam(r, "wallet")
+	wallet := strings.ToLower(chi.URLParam(r, "wallet"))
 	if wallet == "" {
 		http.Error(w, "wallet parameter required", http.StatusBadRequest)
 		return
@@ -132,7 +133,7 @@ func (h *Handler) GetLatestBalances(w http.ResponseWriter, r *http.Request) {
 
 // GetWeeklyBalances handles GET /api/v1/wallets/{wallet}/balances/weekly
 func (h *Handler) GetWeeklyBalances(w http.ResponseWriter, r *http.Request) {
-	wallet := chi.URLParam(r, "wallet")
+	wallet := strings.ToLower(chi.URLParam(r, "wallet"))
 	if wallet == "" {
 		http.Error(w, "wallet parameter required", http.StatusBadRequest)
 		return
@@ -158,7 +159,7 @@ func (h *Handler) GetWeeklyBalances(w http.ResponseWriter, r *http.Request) {
 // GetWeeklyReport handles GET /api/v1/wallets/{wallet}/report/weekly
 // Optional query param: weeks (integer >= 2, default 2)
 func (h *Handler) GetWeeklyReport(w http.ResponseWriter, r *http.Request) {
-	wallet := chi.URLParam(r, "wallet")
+	wallet := strings.ToLower(chi.URLParam(r, "wallet"))
 	if wallet == "" {
 		http.Error(w, "wallet parameter required", http.StatusBadRequest)
 		return
@@ -193,7 +194,7 @@ func (h *Handler) GetWeeklyReport(w http.ResponseWriter, r *http.Request) {
 
 // GetDailyBalances handles GET /api/v1/wallets/{wallet}/balances/daily
 func (h *Handler) GetDailyBalances(w http.ResponseWriter, r *http.Request) {
-	wallet := chi.URLParam(r, "wallet")
+	wallet := strings.ToLower(chi.URLParam(r, "wallet"))
 	if wallet == "" {
 		http.Error(w, "wallet parameter required", http.StatusBadRequest)
 		return
@@ -219,7 +220,7 @@ func (h *Handler) GetDailyBalances(w http.ResponseWriter, r *http.Request) {
 // GetDailyReport handles GET /api/v1/wallets/{wallet}/report/daily
 // Optional query param: days (integer 2-365, default 31)
 func (h *Handler) GetDailyReport(w http.ResponseWriter, r *http.Request) {
-	wallet := chi.URLParam(r, "wallet")
+	wallet := strings.ToLower(chi.URLParam(r, "wallet"))
 	if wallet == "" {
 		http.Error(w, "wallet parameter required", http.StatusBadRequest)
 		return
@@ -255,7 +256,7 @@ func (h *Handler) GetDailyReport(w http.ResponseWriter, r *http.Request) {
 // GetWeeklyPeriodYield handles GET /api/v1/wallets/{wallet}/yield/weekly
 // Optional query param: weeks (integer 2-52, default 8)
 func (h *Handler) GetWeeklyPeriodYield(w http.ResponseWriter, r *http.Request) {
-	wallet := chi.URLParam(r, "wallet")
+	wallet := strings.ToLower(chi.URLParam(r, "wallet"))
 	if wallet == "" {
 		http.Error(w, "wallet parameter required", http.StatusBadRequest)
 		return
@@ -291,7 +292,7 @@ func (h *Handler) GetWeeklyPeriodYield(w http.ResponseWriter, r *http.Request) {
 // GetDailyPeriodYield handles GET /api/v1/wallets/{wallet}/yield/daily
 // Optional query param: days (integer 2-365, default 31)
 func (h *Handler) GetDailyPeriodYield(w http.ResponseWriter, r *http.Request) {
-	wallet := chi.URLParam(r, "wallet")
+	wallet := strings.ToLower(chi.URLParam(r, "wallet"))
 	if wallet == "" {
 		http.Error(w, "wallet parameter required", http.StatusBadRequest)
 		return

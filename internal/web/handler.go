@@ -3,6 +3,7 @@ package web
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/matrixise/rmm-tracker/internal/health"
@@ -39,7 +40,7 @@ func (h *WebHandler) Wallets(w http.ResponseWriter, r *http.Request) {
 
 // WalletDetail handles GET /wallets/{wallet}
 func (h *WebHandler) WalletDetail(w http.ResponseWriter, r *http.Request) {
-	wallet := chi.URLParam(r, "wallet")
+	wallet := strings.ToLower(chi.URLParam(r, "wallet"))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := templates.WalletDetail(wallet).Render(r.Context(), w); err != nil {
 		slog.Error("render wallet detail", "error", err)
