@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-03-01
+
 ### Added
 
+- Version number displayed in the navigation bar
+- Changelog page at `/changelog` rendering this file as HTML
 - Yield endpoints registered and covered by tests (#41)
 - Wallet address search on the `/wallets` page (#35)
 - Current balances section on the wallet detail page (#34)
@@ -60,4 +64,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deploy.sh and test-env.sh scripts translated to English (#43)
 - MD060 table separator spacing fixed in Web UI documentation (#42)
 
-[Unreleased]: https://github.com/matrixise/rmm-tracker/compare/5f17c98...HEAD
+[Unreleased]: https://github.com/matrixise/rmm-tracker/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/matrixise/rmm-tracker/compare/5f17c98...v0.1.0

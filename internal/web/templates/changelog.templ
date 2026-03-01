@@ -1,0 +1,27 @@
+package templates
+
+templ Changelog(html string) {
+	@Layout("Changelog") {
+		<style type="text/tailwindcss">
+			.md h1 { @apply text-3xl font-bold text-gray-900 mt-8 mb-4; }
+			.md h2 { @apply text-2xl font-semibold text-gray-800 mt-8 mb-3 pb-2 border-b border-gray-200; }
+			.md h3 { @apply text-lg font-semibold text-gray-800 mt-6 mb-2; }
+			.md p  { @apply text-gray-700 leading-relaxed mb-4; }
+			.md ul { @apply list-disc list-inside space-y-1 mb-4 text-gray-700 pl-4; }
+			.md ol { @apply list-decimal list-inside space-y-1 mb-4 text-gray-700 pl-4; }
+			.md li { @apply leading-relaxed; }
+			.md a  { @apply text-indigo-600 hover:text-indigo-800 hover:underline; }
+			.md code { @apply bg-gray-100 text-sm font-mono px-1.5 py-0.5 rounded; }
+			.md pre { @apply bg-gray-100 rounded-lg p-4 mb-4 overflow-x-auto text-sm font-mono; }
+			.md pre code { @apply bg-transparent p-0; }
+			.md strong { @apply font-semibold; }
+			.md blockquote { @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 mb-4; }
+			.md hr { @apply border-gray-200 my-6; }
+		</style>
+		<div class="bg-white shadow rounded-lg p-8">
+			<div class="md">
+				@templ.Raw(html)
+			</div>
+		</div>
+	}
+}
