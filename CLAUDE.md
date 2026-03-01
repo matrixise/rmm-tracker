@@ -207,6 +207,16 @@ Use it for navigation tasks that gopls MCP does not cover (e.g. cross-file jump-
 Using `Read` alone on a `.go` file without following up with `go_file_context` is insufficient.
 Always combine both to understand intra-package dependencies.
 
+## PR Checklist
+
+Before opening any pull request, always:
+
+1. **Update `CHANGELOG.md`** — add an entry under `## [Unreleased]` in the appropriate section (`Added`, `Changed`, or `Fixed`) with a short description and the PR number (e.g. `(#52)`).
+2. **Run tests** — `task test`
+3. **Squash + auto-merge** — `gh pr merge <n> --squash --auto`
+
+Never skip step 1. The CHANGELOG is the source of truth for release notes.
+
 ## Related Documentation
 
 - `README.md` - User-facing quick start
