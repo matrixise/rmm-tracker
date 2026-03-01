@@ -233,7 +233,7 @@ func runTracker(cmd *cobra.Command, args []string) error {
 
 	if httpAddr != "" {
 		apiHandler := api.NewHandler(reader, healthChecker)
-		router := api.NewRouter(healthChecker.Handler(), apiHandler, healthChecker, enableWeb, reader)
+		router := api.NewRouter(healthChecker.Handler(), apiHandler, healthChecker, enableWeb, reader, Version, ChangelogMD)
 
 		httpServer := &http.Server{
 			Addr:              httpAddr,

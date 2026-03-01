@@ -12,5 +12,6 @@ func NewWebRouter(h *WebHandler) http.Handler {
 	r.Get("/", h.Dashboard)
 	r.Get("/wallets", h.Wallets)
 	r.Get("/wallets/{wallet}", h.WalletDetail)
+	r.Get("/changelog", h.Changelog)
 	return r
 }

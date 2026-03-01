@@ -133,7 +133,7 @@ func newRouter(ms *mockStore) http.Handler {
 	h := NewHandler(ms, nil)
 	return NewRouter(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}, h, nil, false, ms)
+	}, h, nil, false, ms, "dev", nil)
 }
 
 func get(t *testing.T, router http.Handler, path string) *httptest.ResponseRecorder {
