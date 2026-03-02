@@ -58,7 +58,7 @@ jobs:
           cache: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
 
       - name: Install yamllint
         run: uv tool install yamllint
