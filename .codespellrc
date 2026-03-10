@@ -1,3 +1,4 @@
 [codespell]
 # docs/ contains historical documents written in French
 skip = ./docs
+ignore-words-list = complets
