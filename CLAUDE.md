@@ -217,6 +217,25 @@ Before opening any pull request, always:
 
 Never skip step 1. The CHANGELOG is the source of truth for release notes.
 
+## GitHub Actions
+
+Avant de créer ou modifier un workflow :
+
+1. **Lire le README de l'action utilisée** avant d'écrire quoi que ce soit.
+2. **Valider avec `actionlint`** avant de pousser : `actionlint .github/workflows/<file>.yml`
+3. **Tester sur une seule instance** avant de bulk-trigger (ex: une seule issue avant d'en labeler 21).
+4. **Lire les logs complets** dès le premier échec : `gh run view <id> --log-failed`
+5. **Un seul changement à la fois** — ne pas empiler plusieurs correctifs dans la même itération.
+
+### `claude-code-action` — prérequis non négociables
+
+- `actions/checkout` **obligatoire** avant l'action (sans ça : `fatal: not in a git directory`).
+- `id-token: write` **obligatoire** dans les permissions (requis pour l'échange OIDC OAuth).
+- `--allowed-tools` bloque **aussi** les outils built-in (`Read`, `Glob`, `Grep`) — les lister explicitement si nécessaire.
+- `timeout-minutes: 10` minimum pour les jobs de labeling (le démarrage du runner seul prend 30-60s).
+- `--max-turns` trop bas + outils bloqués = `error_max_turns` immédiat. Partir sur 12 pour un workflow non trivial.
+- Une PR qui modifie son propre fichier workflow ne peut pas déclencher ce workflow — merger dans `main` d'abord (`gh pr merge --admin`), puis rebaser.
+
 ## Related Documentation
 
 - `README.md` - User-facing quick start
