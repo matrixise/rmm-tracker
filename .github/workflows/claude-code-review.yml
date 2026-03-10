@@ -8,39 +8,28 @@ jobs:
   claude-review:
     if: ${{ github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: read
       id-token: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+            Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
 
-            Please review this pull request.
+            Steps (do exactly these, in order, nothing more):
+            1. Run `gh pr diff ${{ github.event.pull_request.number }}` to get the diff.
+            2. Analyze the diff for: correctness, security issues, best practices.
+            3. Post a concise review with `gh pr comment ${{ github.event.pull_request.number }} --body "<your review>"`.
 
-            Points to examine:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
-
-            Use the CLAUDE.md file in the repository as a reference for style and conventions.
-            Be constructive and helpful in your comments.
-
-            Use `gh pr comment` with your Bash tool to post your review as a comment on the PR.
-
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+            Be direct and concise. Do not explore the repo beyond the diff.
+          claude_args: >-
+            --max-turns 4
+            --allowed-tools "Bash(gh pr diff:*),Bash(gh pr comment:*)"
