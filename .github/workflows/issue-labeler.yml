@@ -12,6 +12,7 @@ jobs:
   label:
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: write
@@ -41,7 +42,7 @@ jobs:
             | mobile        | #d876e3 | Mobile-specific layout or UX |
 
             Steps:
-            1. Create any label not yet on the repo: `gh label create <name> --color <hex> --force`
+            1. Create any label not yet on the repo (skip if it already exists): `gh label list | grep -q "^<name>" || gh label create <name> --color <hex>`
             2. Apply 1 to 3 relevant labels: `gh issue edit ${{ github.event.issue.number }} --add-label "<label>"`
 
             Do not add labels that are not in the table above.
