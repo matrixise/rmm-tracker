@@ -160,7 +160,7 @@ jobs:
           fetch-depth: 1
 
       - name: Lint Markdown
-        uses: DavidAnson/markdownlint-cli2-action@v22.0.0
+        uses: DavidAnson/markdownlint-cli2-action@v23.0.0
         with:
           globs: |
             **/*.md
