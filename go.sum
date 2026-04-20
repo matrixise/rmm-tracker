@@ -73,8 +73,8 @@ github.com/getsentry/sentry-go v0.27.0 h1:Pv98CIbtB3LkMWmXi4Joa5OOcwbmnX88sF5qbK
 github.com/getsentry/sentry-go v0.27.0/go.mod h1:lc76E2QywIyW8WuBnwl8Lc4bkmQH4+w1gwTf25trprY=
 github.com/go-chi/chi/v5 v5.2.5 h1:Eg4myHZBjyvJmAFjFvWgrqDTXFyOzjj7YIm3L3mu6Ug=
 github.com/go-chi/chi/v5 v5.2.5/go.mod h1:X7Gx4mteadT3eDOMTsXzmI4/rwUpOwBHLpAfupzFJP0=
-github.com/go-co-op/gocron/v2 v2.20.0 h1:9IMrnnVSWjfSh3E54gWmWCHbloQJLh6f9+nwyKfLNpc=
-github.com/go-co-op/gocron/v2 v2.20.0/go.mod h1:5lEiCKk1oVJV39Zg7/YG10OnaVrDAV5GGR6O0663k6U=
+github.com/go-co-op/gocron/v2 v2.21.0 h1:e1nt9AEFglarRH9/9y9q0V5sblwxlknpHPjttEajrwQ=
+github.com/go-co-op/gocron/v2 v2.21.0/go.mod h1:5lEiCKk1oVJV39Zg7/YG10OnaVrDAV5GGR6O0663k6U=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
 github.com/go-logr/logr v1.4.3/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
