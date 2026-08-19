@@ -163,9 +163,9 @@ func (s *Scheduler) NextRun() (time.Time, error) {
 	return nextRun, nil
 }
 
-// LastRun returns the last run time
+// LastRun returns the last run start time
 func (s *Scheduler) LastRun() (time.Time, error) {
-	lastRun, err := s.job.LastRun()
+	lastRun, err := s.job.LastRunStartedAt()
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to get last run: %w", err)
 	}
