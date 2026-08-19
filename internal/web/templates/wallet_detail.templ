@@ -38,7 +38,7 @@ templ WalletDetail(wallet string) {
 			<div x-show="weeklyReport.length > 0" class="bg-white shadow rounded-lg p-6 mb-6">
 				<p class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Period yield</p>
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-					<template x-for="row in periodYield(weeklyReport, 'week_start')" :key="row.symbol">
+					<template x-for="row in periodYield(weeklyReport, 'week_start', 'week_end')" :key="row.symbol">
 						<div class="border border-gray-200 rounded-lg p-4">
 							<p class="text-xs font-semibold text-gray-400 uppercase mb-1" x-text="row.symbol"></p>
 							<p class="text-xs text-gray-400 mb-2 font-mono" x-text="row.fromLabel + ' → ' + row.toLabel"></p>
@@ -183,11 +183,13 @@ templ WalletDetail(wallet string) {
 		}
 
 		// Compute period yield per token from a report array.
-		// dateField: the field used as the date key ('week_start' or 'day').
+		// dateField: the field used as the range start ('week_start' or 'day').
+		// endField: the field used as the range end (defaults to dateField, e.g. 'week_end').
 		// Report rows are ordered by date DESC (most recent first) for each symbol.
 		// start = previous_balance of the oldest row, end = current_balance of the newest row.
-		function periodYield(report, dateField) {
+		function periodYield(report, dateField, endField) {
 			if (!Array.isArray(report) || report.length === 0) return []
+			endField = endField || dateField
 			const bySymbol = {}
 			for (const r of report) {
 				if (!bySymbol[r.symbol]) bySymbol[r.symbol] = []
@@ -202,7 +204,7 @@ templ WalletDetail(wallet string) {
 				const change = end - start
 				const pct = start !== 0 ? (change / start) * 100 : 0
 				const fromLabel = fmtDate(oldest[dateField])
-				const toLabel   = fmtDate(newest[dateField])
+				const toLabel   = fmtDate(newest[endField])
 				return { symbol, start, end, change, pct, fromLabel, toLabel }
 			})
 		}

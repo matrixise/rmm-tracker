@@ -144,8 +144,8 @@ func computeWeeklyPeriodYield(symbolOrder []string, bySymbol map[string][]weekEn
 	return results
 }
 
-// computeWeeklyReport builds a WeeklyReport for each symbol from pre-grouped rows.
-// bySymbol maps symbol → []weekEntry ordered week_bucket DESC (entries[0] = current week).
+// computeWeeklyReport builds a WeeklyReport for each consecutive (week, week-1) pair per symbol.
+// bySymbol maps symbol → []weekEntry ordered week_bucket DESC (entries[0] = most recent week).
 // symbolOrder preserves the original query ordering.
 func computeWeeklyReport(symbolOrder []string, bySymbol map[string][]weekEntry) []WeeklyReport {
 	hundred := decimal.NewFromInt(100)
@@ -159,8 +159,6 @@ func computeWeeklyReport(symbolOrder []string, bySymbol map[string][]weekEntry) 
 			continue
 		}
 
-		current := entries[0].balance
-
 		// Single entry — no previous week to compare against.
 		// Return only the current balance; all change/growth metrics stay zero.
 		if len(entries) == 1 {
@@ -169,62 +167,64 @@ func computeWeeklyReport(symbolOrder []string, bySymbol map[string][]weekEntry) 
 				TokenAddress:   entries[0].tokenAddress,
 				WeekStart:      entries[0].weekBucket,
 				WeekEnd:        entries[0].weekBucket.Add(7 * 24 * time.Hour),
-				CurrentBalance: current,
+				CurrentBalance: entries[0].balance,
 			})
 			continue
 		}
 
-		previous := entries[len(entries)-1].balance
+		for i := 0; i < len(entries)-1; i++ {
+			current := entries[i].balance
+			previous := entries[i+1].balance
 
-		change := current.Sub(previous)
+			change := current.Sub(previous)
 
-		var changePercent decimal.Decimal
-		if !previous.IsZero() {
-			changePercent = change.Div(previous).Mul(hundred)
-		}
+			var changePercent decimal.Decimal
+			if !previous.IsZero() {
+				changePercent = change.Div(previous).Mul(hundred)
+			}
 
-		// Use the actual elapsed days between the oldest and newest buckets
-		// rather than a theoretical value — handles the case where fewer weeks
-		// exist in the DB than requested.
-		d := entries[0].weekBucket.Sub(entries[len(entries)-1].weekBucket).Hours() / 24
-		actualDays := decimal.NewFromFloat(d)
+			// Use the actual elapsed days between this pair of buckets
+			// rather than a theoretical value.
+			d := entries[i].weekBucket.Sub(entries[i+1].weekBucket).Hours() / 24
+			actualDays := decimal.NewFromFloat(d)
 
-		var dailyAvg decimal.Decimal
-		if actualDays.IsPositive() {
-			dailyAvg = change.Div(actualDays)
-		}
+			var dailyAvg decimal.Decimal
+			if actualDays.IsPositive() {
+				dailyAvg = change.Div(actualDays)
+			}
 
-		// APY = (1 + change/previous)^(365/actualDays) - 1
-		// Guard: math.Pow(ratio, non-integer) returns NaN when ratio <= 0.
-		var apy decimal.Decimal
-		if !previous.IsZero() && actualDays.IsPositive() {
-			ratio, _ := one.Add(change.Div(previous)).Float64()
-			if ratio > 0 {
-				exponent, _ := daysPerYear.Div(actualDays).Float64()
-				v := math.Pow(ratio, exponent) - 1
-				if !math.IsInf(v, 0) && !math.IsNaN(v) {
-					apy = decimal.NewFromFloat(v).Mul(hundred)
+			// APY = (1 + change/previous)^(365/actualDays) - 1
+			// Guard: math.Pow(ratio, non-integer) returns NaN when ratio <= 0.
+			var apy decimal.Decimal
+			if !previous.IsZero() && actualDays.IsPositive() {
+				ratio, _ := one.Add(change.Div(previous)).Float64()
+				if ratio > 0 {
+					exponent, _ := daysPerYear.Div(actualDays).Float64()
+					v := math.Pow(ratio, exponent) - 1
+					if !math.IsInf(v, 0) && !math.IsNaN(v) {
+						apy = decimal.NewFromFloat(v).Mul(hundred)
+					}
 				}
 			}
+
+			// week_start = beginning of the previous (older) bucket in this pair.
+			// week_end   = end of the current (newer) bucket = current bucket + 7 days.
+			weekStart := entries[i+1].weekBucket
+			weekEnd := entries[i].weekBucket.Add(7 * 24 * time.Hour)
+
+			results = append(results, WeeklyReport{
+				Symbol:          sym,
+				TokenAddress:    entries[i].tokenAddress,
+				WeekStart:       weekStart,
+				WeekEnd:         weekEnd,
+				CurrentBalance:  current,
+				PreviousBalance: previous,
+				Change:          change,
+				ChangePercent:   changePercent,
+				DailyAvgChange:  dailyAvg,
+				APY:             apy,
+			})
 		}
-
-		// week_start = beginning of the oldest week in the comparison period.
-		// week_end   = end of the current (most recent) week = newest bucket + 7 days.
-		weekStart := entries[len(entries)-1].weekBucket
-		weekEnd := entries[0].weekBucket.Add(7 * 24 * time.Hour)
-
-		results = append(results, WeeklyReport{
-			Symbol:          sym,
-			TokenAddress:    entries[0].tokenAddress,
-			WeekStart:       weekStart,
-			WeekEnd:         weekEnd,
-			CurrentBalance:  current,
-			PreviousBalance: previous,
-			Change:          change,
-			ChangePercent:   changePercent,
-			DailyAvgChange:  dailyAvg,
-			APY:             apy,
-		})
 	}
 
 	return results

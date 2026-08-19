@@ -110,8 +110,9 @@ func TestComputeWeeklyReport_TwoWeeks_NormalGrowth(t *testing.T) {
 	assert.Equal(t, current.Add(7*24*time.Hour), r.WeekEnd)
 }
 
-func TestComputeWeeklyReport_FourWeeks_ActualDays21(t *testing.T) {
-	// weeks=4 requested but actualDays must come from data, not theoretical value.
+func TestComputeWeeklyReport_FourWeeks_OneRowPerConsecutivePair(t *testing.T) {
+	// weeks=4 requested → one row per consecutive (week, week-1) pair, mirroring
+	// computeDailyReport, not a single row aggregated over the whole window.
 	w0 := monday(2026, time.February, 23) // current
 	w1 := monday(2026, time.February, 16)
 	w2 := monday(2026, time.February, 9)
@@ -122,31 +123,37 @@ func TestComputeWeeklyReport_FourWeeks_ActualDays21(t *testing.T) {
 			{symbol: "XDAI", tokenAddress: "0xXDAI", weekBucket: w0, balance: dec("2100")},
 			{symbol: "XDAI", tokenAddress: "0xXDAI", weekBucket: w1, balance: dec("2070")},
 			{symbol: "XDAI", tokenAddress: "0xXDAI", weekBucket: w2, balance: dec("2040")},
-			{symbol: "XDAI", tokenAddress: "0xXDAI", weekBucket: w3, balance: dec("2000")},
+			{symbol: "XDAI", tokenAddress: "0xXDAI", weekBucket: w3, balance: dec("2010")},
 		},
 	}
 
 	results := computeWeeklyReport([]string{"XDAI"}, bySymbol)
 
-	require.Len(t, results, 1)
-	r := results[0]
+	require.Len(t, results, 3)
 
-	// change = 2100 - 2000 = 100
-	assertDecEqual(t, "100", r.Change)
+	// Each pair spans exactly 7 days and changes by 30.
+	for i, r := range results {
+		assertDecEqual(t, "30", r.Change, "pair %d", i)
+		expectedDailyAvg := dec("30").Div(dec("7"))
+		assertDecimalApprox(t, expectedDailyAvg, r.DailyAvgChange, "0.000001", "daily avg over 7 days, pair %d", i)
+	}
 
-	// actualDays = w0 - w3 = 21 days
-	// daily_avg = 100/21
-	expectedDailyAvg := dec("100").Div(dec("21"))
-	assertDecimalApprox(t, expectedDailyAvg, r.DailyAvgChange, "0.000001", "daily avg over 21 days")
+	// Row 0: current=w0/2100, previous=w1/2070
+	assert.Equal(t, w1, results[0].WeekStart)
+	assert.Equal(t, w0.Add(7*24*time.Hour), results[0].WeekEnd)
+	assertDecEqual(t, "2100", results[0].CurrentBalance)
+	assertDecEqual(t, "2070", results[0].PreviousBalance)
 
-	// APY = (1 + 100/2000)^(365/21) - 1
-	ratio := 1 + 100.0/2000.0
-	expectedAPY := decimal.NewFromFloat((math.Pow(ratio, 365.0/21.0) - 1) * 100)
-	assertDecimalApprox(t, expectedAPY, r.APY, "0.001", "APY over 21 days")
+	// Row 2 (oldest pair): current=w2/2040, previous=w3/2010
+	assert.Equal(t, w3, results[2].WeekStart)
+	assert.Equal(t, w2.Add(7*24*time.Hour), results[2].WeekEnd)
+	assertDecEqual(t, "2040", results[2].CurrentBalance)
+	assertDecEqual(t, "2010", results[2].PreviousBalance)
 
-	// week_start = w3 (oldest), week_end = w0 + 7d
-	assert.Equal(t, w3, r.WeekStart)
-	assert.Equal(t, w0.Add(7*24*time.Hour), r.WeekEnd)
+	// APY for row 0 = (1 + 30/2070)^(365/7) - 1
+	ratio := 1 + 30.0/2070.0
+	expectedAPY := decimal.NewFromFloat((math.Pow(ratio, 365.0/7.0) - 1) * 100)
+	assertDecimalApprox(t, expectedAPY, results[0].APY, "0.001", "APY over 7 days")
 }
 
 func TestComputeWeeklyReport_FewerWeeksThanRequested(t *testing.T) {
