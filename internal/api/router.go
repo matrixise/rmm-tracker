@@ -24,7 +24,7 @@ func slogLogger(next http.Handler) http.Handler {
 			"status", ww.Status(),
 			"bytes", ww.BytesWritten(),
 			"duration", time.Since(start),
-			"remote", r.RemoteAddr,
+			"remote", middleware.GetClientIP(r.Context()),
 		)
 	})
 }
@@ -35,7 +35,11 @@ func NewRouter(healthHandler http.HandlerFunc, apiHandler *Handler, checker *hea
 	r := chi.NewRouter()
 	r.Use(slogLogger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.RealIP)
+	// No trusted reverse proxy in front of this service today, so the client
+	// IP is read straight from the TCP peer address rather than a spoofable
+	// X-Forwarded-For / X-Real-IP / True-Client-IP header (see RealIP's
+	// deprecation notice).
+	r.Use(middleware.ClientIPFromRemoteAddr)
 
 	r.Get("/health", healthHandler)
 
