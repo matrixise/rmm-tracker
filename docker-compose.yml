@@ -30,13 +30,33 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://rmm:rmm@postgres:5432/rmm_tracker?sslmode=disable
-      RMM_TRACKER_INTERVAL: 5m  # Enable daemon mode
+    # Args are appended to the image ENTRYPOINT (`./rmm-tracker run`).
+    #
+    # `--http :8080` is what actually starts the health server. Without it the
+    # server never listens and the healthcheck below can only ever fail -- it
+    # was failing exactly that way before, with curl, for the same reason.
+    #
+    # `--interval 5m` has to be passed explicitly rather than via
+    # RMM_TRACKER_INTERVAL: run.go deliberately ignores the config/env interval
+    # once --http is set, so that flag combination is the only way to get the
+    # scheduler and the health server at the same time.
+    command: ["--http", ":8080", "--interval", "5m"]
     volumes:
+      # The container runs as uid 65532, so the host file must be readable by
+      # "other" (0644) or owned by 65532. A 0600 config.toml -- a natural mode
+      # for a file that may hold RPC credentials -- makes the app exit at
+      # startup with "failed to read config: permission denied".
       - ./config.toml:/app/config.toml:ro
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      # BusyBox wget, not curl: alpine ships wget as a builtin applet, so the
+      # image no longer installs the curl package just to run this check.
+      # `-q -O /dev/null` is the `curl -f` equivalent -- BusyBox wget exits
+      # non-zero on any HTTP >= 400, and it issues a real GET (/health answers
+      # 405 to anything else). Errors still print, so `docker inspect` shows
+      # the failing status line.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3
