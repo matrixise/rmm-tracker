@@ -80,12 +80,22 @@ go test ./internal/config -run TestLoadConfig
 
 ## Docker
 
-Multi-arch builds (AMD64 + ARM64) via buildx:
+Single-platform builds (`linux/amd64` only) via buildx:
 ```bash
 task docker:buildx:push  # Build and push to Docker Hub
 ```
 
-Health check endpoint: `GET /health` (daemon mode only, port 8080).
+The `Dockerfile` builds `FROM golang:1.27-alpine` directly — there is no custom
+builder image. Modules come from a `go mod download` layer that bind-mounts only
+`go.mod`/`go.sum` into a BuildKit cache mount shared with `go build`.
+
+Runtime stage is a pinned `alpine:3.24` with `ca-certificates` only (no `curl`),
+running as `USER 65532:65532`. A bind-mounted `config.toml` must therefore be
+readable by that UID (`0644`, or owned by 65532).
+
+Health check endpoint: `GET /health` (daemon mode only, port 8080). It only
+listens when `run` is given `--http`, which `docker-compose.yml` passes via
+`command:`; the compose healthcheck uses BusyBox `wget`, not `curl`.
 
 ## Important Notes
 

@@ -136,7 +136,7 @@ tasks:
       - docker compose ps
 
   docker:buildx:setup:
-    desc: Setup Docker buildx for multi-arch builds
+    desc: Setup the Docker buildx builder
     cmds:
       - docker buildx create --name rmm-builder --use --bootstrap || docker buildx use rmm-builder
       - docker buildx inspect --bootstrap
@@ -161,13 +161,13 @@ tasks:
           .
 
   docker:buildx:push:
-    desc: Build and push multi-arch image (AMD64 + ARM64) to Docker Hub
+    desc: Build and push the linux/amd64 image to Docker Hub
     deps: [docker:buildx:setup]
     cmds:
       - |
         docker buildx build \
           --builder rmm-builder \
-          --platform linux/amd64,linux/arm64 \
+          --platform linux/amd64 \
           --build-arg VERSION={{.VERSION}} \
           --build-arg GIT_COMMIT={{.GIT_COMMIT}} \
           --build-arg BUILD_TIME={{.BUILD_TIME}} \

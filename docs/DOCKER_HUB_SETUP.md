@@ -28,7 +28,7 @@ Pour que le workflow GitHub Actions puisse publier sur Docker Hub, vous devez co
 ## Vérification
 
 Une fois les secrets configurés, le prochain push sur `main` ou un tag `v*` déclenchera automatiquement :
-- Construction multi-arch (AMD64 + ARM64)
+- Construction de l'image `linux/amd64`
 - Publication sur ghcr.io/matrixise/realt-rmm
 - Publication sur docker.io/matrixise/rmm-tracker
 
@@ -45,17 +45,23 @@ docker pull matrixise/rmm-tracker:v1.0.0
 docker pull ghcr.io/matrixise/realt-rmm:latest
 ```
 
-Les images fonctionneront automatiquement sur :
+Les images sont publiées uniquement pour `linux/amd64` (x86_64), la seule
+architecture réellement déployée en production. Le support `linux/arm64` a été
+retiré (#130) :
+
 - ✅ Serveurs Linux AMD64 (x86_64)
-- ✅ MacBooks M1/M2/M3 (ARM64)
-- ✅ Raspberry Pi 4/5 (ARM64)
+- ❌ MacBooks Apple Silicon (M1/M2/M3) — pas d'image ARM64 native
+- ❌ Raspberry Pi 4/5 (ARM64) — pas d'image ARM64 native
+
+Sur une machine ARM64, `docker pull` échouera (ou l'image devra être émulée via
+QEMU, avec la perte de performance correspondante).
 
 ## Test local
 
-Pour tester la construction multi-arch localement :
+Pour tester la construction localement :
 
 ```bash
-# Configuration initiale (une seule fois)
+# Configuration initiale du builder buildx (une seule fois)
 task docker:buildx:setup
 
 # Construire et pousser vers Docker Hub
