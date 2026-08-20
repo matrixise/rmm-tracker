@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Published `matrixise/rmm-tracker` images are now `linux/amd64` only, matching the only architecture actually deployed to production. Dropped the QEMU setup step and the `linux/arm64` platform target from `docker-publish.yml` accordingly
 - Bumped the builder base image to `golang:1.27-alpine` (from `1.26`) and wired the main `Dockerfile`'s builder stage to build `FROM matrixise/rmm-tracker-builder`, so `go mod download` no longer runs on every image build
 - `docker-publish.yml` now rebuilds and pushes the builder image itself (as a `build-builder` job that `build-and-push` explicitly `needs:`) on every deploy, instead of relying on a separately-triggered workflow — removes the race between the two publishing to Docker Hub. `docker-builder.yml` is now manual-only (`workflow_dispatch`), for ad-hoc rebuilds
 
