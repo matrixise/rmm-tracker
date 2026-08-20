@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bumped the builder base image to `golang:1.27-alpine` (from `1.26`) and wired the main `Dockerfile`'s builder stage to build `FROM matrixise/rmm-tracker-builder`, so `go mod download` no longer runs on every image build
 - `docker-publish.yml` now rebuilds and pushes the builder image itself (as a `build-builder` job that `build-and-push` explicitly `needs:`) on every deploy, instead of relying on a separately-triggered workflow — removes the race between the two publishing to Docker Hub. `docker-builder.yml` is now manual-only (`workflow_dispatch`), for ad-hoc rebuilds
 
+### Removed
+
+- Cross-compilation machinery from `Dockerfile`, now that only `linux/amd64` is ever built: `--platform=$BUILDPLATFORM` on the builder stage, the buildx-injected `TARGETOS`/`TARGETARCH` ARGs and their non-empty assertions, the explicit `GOOS`/`GOARCH` on `go build`, the `go version -m` build-metadata readback, and the final stage's ELF `e_machine` guard (one fewer layer in the runtime image). Go now builds for the builder image's native architecture and `CGO_ENABLED=0` is unchanged. The issue #124 failure mode these guards protected against — a defaulted platform ARG masking the value buildx injects — cannot occur with a single target platform; a header comment in `Dockerfile` records that the whole pattern must be restored if `linux/arm64` is ever reintroduced
+
 ### Fixed
 
 - `docker-publish.yml`'s `build-builder` job tagged the pushed builder image from `go.mod`'s `go` directive (`1.26`) instead of `Dockerfile.builder`'s actual base image (`golang:1.27-alpine`), so it published `rmm-tracker-builder:go1.26` while the main `Dockerfile` pulled `rmm-tracker-builder:go1.27` — a tag that never existed. Both workflows now read the version straight from `Dockerfile.builder`'s `FROM` line, which can't drift from what's actually in the image
