@@ -3,17 +3,20 @@
 # --platform=$BUILDPLATFORM ensures the builder stage always runs natively on
 # the CI host (linux/amd64), even when cross-compiling for arm64.  QEMU is
 # only needed for the final `apk add` step, not for the Go compilation.
+#
+# matrixise/rmm-tracker-builder (built from Dockerfile.builder, see
+# .github/workflows/docker-builder.yml) already has the Go modules for the
+# current go.mod/go.sum downloaded, so `go mod download` is out of this
+# stage's critical path. It's rebuilt/pushed on every go.mod/go.sum change
+# and is amd64-only, matching $BUILDPLATFORM on the CI host.
 
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
+FROM --platform=$BUILDPLATFORM matrixise/rmm-tracker-builder:go1.27 AS builder
 
 ARG ENABLE_LINT=false
 
 ENV GOTOOLCHAIN=auto
 
 WORKDIR /app
-
-COPY go.mod go.sum ./
-RUN go mod download
 
 COPY . .
 

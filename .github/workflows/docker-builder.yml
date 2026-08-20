@@ -1,16 +1,13 @@
 name: Build and Publish Builder Image
 
-# Rebuild the builder base image (which pre-downloads all Go modules)
-# whenever go.mod or go.sum change, or on manual trigger.
-#
-# This keeps `go mod download` out of the critical path in docker-publish.yml.
+# Manual/ad-hoc rebuild of the builder base image (which pre-downloads all Go
+# modules). docker-publish.yml already rebuilds and pushes this image on
+# every deploy (see its build-builder job), so the main Dockerfile always has
+# a fresh, matching image to build FROM without a cross-workflow race. Use
+# this workflow when you want to refresh the published image on its own,
+# without cutting a full application release.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - go.mod
-      - go.sum
   workflow_dispatch:
 
 env:
