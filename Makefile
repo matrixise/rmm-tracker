@@ -3,7 +3,6 @@
 # Variables
 APP_NAME=rmm-tracker
 DOCKER_IMAGE=$(APP_NAME):latest
-GO_VERSION=1.26
 
 help: ## Show this help
 	@echo "Available commands:"

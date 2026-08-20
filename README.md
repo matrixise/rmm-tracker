@@ -10,7 +10,7 @@ A Go application that monitors ERC-20 token balances on Gnosis Chain and persist
 - 🔀 **RPC failover**: Automatic failover between multiple Gnosis Chain RPC endpoints
 - ⚡ **Parallel processing**: Concurrent token queries per wallet using goroutines
 - 📋 **Structured logging**: JSON logs compatible with ELK, Loki, and similar stacks
-- 🐳 **Docker ready**: Multi-arch images (amd64 + arm64) published to Docker Hub
+- 🐳 **Docker ready**: `linux/amd64` images published to Docker Hub, running as a non-root user
 
 ## 🚀 Quick Start
 
@@ -101,9 +101,17 @@ docker compose up
 docker compose up -d
 docker compose logs -f app
 
-# Pull from Docker Hub (multi-arch)
+# Pull from Docker Hub (linux/amd64 only)
 docker pull matrixise/rmm-tracker:latest
 ```
+
+> The published image is `linux/amd64` only — there is no `arm64` variant,
+> so it will not run natively on Apple Silicon or a Raspberry Pi.
+>
+> The container runs as UID/GID `65532:65532`, not root. `docker-compose.yml`
+> bind-mounts `./config.toml` read-only, so the host file must be readable by
+> that user — mode `0644`, or owned by UID 65532. A `0600` `config.toml` makes
+> the app exit at startup with `failed to read config: permission denied`.
 
 Or with Task:
 
@@ -257,7 +265,7 @@ task test                   # Run unit tests
 task test:coverage:html     # Coverage report in browser
 task migrate:up             # Apply migrations
 task migrate:status         # Check migration state
-task docker:buildx:push     # Build multi-arch image and push to Docker Hub
+task docker:buildx:push     # Build linux/amd64 image and push to Docker Hub
 ```
 
 ### Pre-commit hooks

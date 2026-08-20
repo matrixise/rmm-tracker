@@ -205,3 +205,42 @@ prek run golangci-lint
 3. **Health check endpoint** : HTTP `/health` et `/metrics`
 4. **Tests unitaires** : Coverage pour fonctions critiques
 5. **Support multi-chain** : Ethereum, Polygon, etc.
+6. **Image runtime `scratch`** : voir ci-dessous
+
+---
+
+## 🔜 Piste identifiée - image runtime `scratch`
+
+**Non implémenté**, bloqué sur un prérequis applicatif. Mesuré lors du passage
+du runtime à `alpine:3.24` non-root.
+
+Le binaire est déjà statique (`CGO_ENABLED=0`), donc l'étage runtime n'a besoin
+de rien d'Alpine sauf `ca-certificates` (appels JSON-RPC HTTPS vers Gnosis
+Chain), qui peut être copié depuis l'étage builder. Passer de `alpine:3.24` à
+`scratch` économiserait environ **10 MB décompressés** et **~4 MB au `docker
+pull`**, et supprimerait tout l'espace utilisateur Alpine de la surface CVE.
+
+### Ce qui bloque
+
+Le healthcheck de `docker-compose.yml` utilise `wget` (applet BusyBox fourni par
+Alpine). Une image `scratch` ne contient ni shell ni `wget` : le healthcheck
+n'aurait plus rien à exécuter.
+
+**Prérequis** : ajouter une sous-commande `health` à l'application, qui
+interroge `http://localhost:8080/health` et sort avec le bon code de retour. Le
+healthcheck deviendrait alors :
+
+```yaml
+test: ["CMD", "/rmm-tracker", "health"]
+```
+
+C'est-à-dire le binaire lui-même, seul exécutable présent dans l'image.
+
+### Points d'attention pour l'implémentation
+
+- Copier `/etc/ssl/certs/ca-certificates.crt` depuis l'étage builder.
+- `USER 65532:65532` reste valable sur `scratch` (aucun `/etc/passwd` requis
+  pour un UID numérique), mais `WORKDIR` doit être remplacé par un chemin
+  absolu dans `ENTRYPOINT` — `scratch` n'a pas de répertoires.
+- Le montage `./config.toml:/app/config.toml:ro` continue de fonctionner :
+  Docker crée le point de montage.
