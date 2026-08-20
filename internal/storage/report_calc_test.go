@@ -105,8 +105,8 @@ func TestComputeWeeklyReport_TwoWeeks_NormalGrowth(t *testing.T) {
 	expectedAPY := decimal.NewFromFloat((math.Pow(1.01, 365.0/7.0) - 1) * 100)
 	assertDecimalApprox(t, expectedAPY, r.APY, "0.001", "APY formula")
 
-	// week_start = oldest bucket (Feb 16), week_end = newest bucket + 7d (Mar 2)
-	assert.Equal(t, previous, r.WeekStart)
+	// week_start/week_end = the current bucket's own 7-day window (Feb 23 - Mar 2)
+	assert.Equal(t, current, r.WeekStart)
 	assert.Equal(t, current.Add(7*24*time.Hour), r.WeekEnd)
 }
 
@@ -138,14 +138,14 @@ func TestComputeWeeklyReport_FourWeeks_OneRowPerConsecutivePair(t *testing.T) {
 		assertDecimalApprox(t, expectedDailyAvg, r.DailyAvgChange, "0.000001", "daily avg over 7 days, pair %d", i)
 	}
 
-	// Row 0: current=w0/2100, previous=w1/2070
-	assert.Equal(t, w1, results[0].WeekStart)
+	// Row 0: current=w0/2100, previous=w1/2070 — week range is w0's own week
+	assert.Equal(t, w0, results[0].WeekStart)
 	assert.Equal(t, w0.Add(7*24*time.Hour), results[0].WeekEnd)
 	assertDecEqual(t, "2100", results[0].CurrentBalance)
 	assertDecEqual(t, "2070", results[0].PreviousBalance)
 
-	// Row 2 (oldest pair): current=w2/2040, previous=w3/2010
-	assert.Equal(t, w3, results[2].WeekStart)
+	// Row 2 (oldest pair): current=w2/2040, previous=w3/2010 — week range is w2's own week
+	assert.Equal(t, w2, results[2].WeekStart)
 	assert.Equal(t, w2.Add(7*24*time.Hour), results[2].WeekEnd)
 	assertDecEqual(t, "2040", results[2].CurrentBalance)
 	assertDecEqual(t, "2010", results[2].PreviousBalance)
@@ -294,7 +294,7 @@ func TestComputeWeeklyReport_APY_Positive_LargeGrowth(t *testing.T) {
 }
 
 func TestComputeWeeklyReport_WeekStartEnd_TwoWeeks(t *testing.T) {
-	// week_start = oldest bucket, week_end = newest bucket + 7 days
+	// week_start/week_end = the current (newest) bucket's own 7-day window
 	feb16 := monday(2026, time.February, 16)
 	feb23 := monday(2026, time.February, 23)
 
@@ -308,8 +308,8 @@ func TestComputeWeeklyReport_WeekStartEnd_TwoWeeks(t *testing.T) {
 	results := computeWeeklyReport([]string{"X"}, bySymbol)
 	require.Len(t, results, 1)
 
-	assert.Equal(t, feb16, results[0].WeekStart, "week_start = oldest bucket")
-	assert.Equal(t, feb23.Add(7*24*time.Hour), results[0].WeekEnd, "week_end = newest + 7d")
+	assert.Equal(t, feb23, results[0].WeekStart, "week_start = current bucket")
+	assert.Equal(t, feb23.Add(7*24*time.Hour), results[0].WeekEnd, "week_end = current bucket + 7d")
 }
 
 func TestComputeWeeklyReport_SkipsEmptyEntries(t *testing.T) {
