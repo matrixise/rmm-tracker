@@ -7,62 +7,9 @@ on:
 
 env:
   DOCKERHUB_IMAGE: matrixise/rmm-tracker
-  BUILDER_IMAGE: matrixise/rmm-tracker-builder
 
 jobs:
-  build-builder:
-    if: |
-      github.event.workflow_run.conclusion == 'success' &&
-      (github.event.workflow_run.head_branch == 'main' ||
-       startsWith(github.event.workflow_run.head_branch, 'v'))
-    runs-on: ubuntu-latest
-    outputs:
-      go_version: ${{ steps.goversion.outputs.version }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      # Read from Dockerfile.builder's own FROM line, not go.mod's `go`
-      # directive: those are two different things (installed toolchain vs.
-      # minimum language version) and can legitimately diverge, which is
-      # exactly what broke this tag before -- go.mod said 1.26 while
-      # Dockerfile.builder had already moved to golang:1.27-alpine.
-      - name: Extract Go version from Dockerfile.builder
-        id: goversion
-        run: |
-          GO_VERSION=$(grep 'FROM' Dockerfile.builder | grep -oE 'golang:[0-9]+\.[0-9]+' | cut -d: -f2)
-          echo "version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
-
-      # Runs on every publish (not just when go.mod/go.sum change) so the
-      # build-and-push job below always has a matching, freshly-pushed
-      # builder image to pull FROM -- no cross-workflow race to get right.
-      # GHA layer caching keeps this near-instant when go.sum is unchanged.
-      - name: Build and push builder image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: Dockerfile.builder
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ env.BUILDER_IMAGE }}:go${{ steps.goversion.outputs.version }}
-            ${{ env.BUILDER_IMAGE }}:latest
-          cache-from: type=gha,scope=builder
-          cache-to: type=gha,mode=max,scope=builder
-
   build-and-push:
-    needs: build-builder
     if: |
       github.event.workflow_run.conclusion == 'success' &&
       (github.event.workflow_run.head_branch == 'main' ||

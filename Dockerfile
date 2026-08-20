@@ -6,12 +6,14 @@
 # with it -- `--platform=$BUILDPLATFORM` on the builder, TARGETOS/TARGETARCH
 # injected by buildx (never defaulted), and the arch guards that caught #124.
 #
-# matrixise/rmm-tracker-builder (built from Dockerfile.builder, see
-# .github/workflows/docker-builder.yml) already has the Go modules for the
-# current go.mod/go.sum downloaded, so `go mod download` is out of this
-# stage's critical path. It's rebuilt/pushed on every go.mod/go.sum change.
+# Modules are fetched by a dedicated `go mod download` layer that bind-mounts
+# only go.mod/go.sum, so it is invalidated by a dependency change and not by
+# every source edit, and stores them in a BuildKit cache mount shared with the
+# `go build` layer below (same `id=go-mod`). Both mounts must stay in sync:
+# the modules live in the cache, not in an image layer, so dropping the mount
+# from the build step would silently re-download everything.
 
-FROM matrixise/rmm-tracker-builder:go1.27 AS builder
+FROM golang:1.27-alpine AS builder
 
 # 'local' pins the build to the base image's Go toolchain: no silent mid-build
 # download of a different version. Bumping go.mod past that version must now be
@@ -19,6 +21,11 @@ FROM matrixise/rmm-tracker-builder:go1.27 AS builder
 ENV GOTOOLCHAIN=local
 
 WORKDIR /app
+
+RUN --mount=type=cache,target=/go/pkg/mod,id=go-mod \
+    --mount=type=bind,source=go.mod,target=go.mod \
+    --mount=type=bind,source=go.sum,target=go.sum \
+    go mod download
 
 COPY . .
 
@@ -30,6 +37,7 @@ ARG BUILD_TIME=unknown
 
 # CGO_ENABLED=0 keeps the binary static so it runs on the bare alpine stage.
 RUN --mount=type=cache,target=/root/.cache/go-build,id=go-build \
+    --mount=type=cache,target=/go/pkg/mod,id=go-mod \
     set -eu; \
     CGO_ENABLED=0 go build \
     -trimpath \
