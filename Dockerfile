@@ -44,12 +44,38 @@ RUN --mount=type=cache,target=/root/.cache/go-build,id=go-build \
     -ldflags "-s -w -X github.com/matrixise/rmm-tracker/cmd.Version=${VERSION} -X github.com/matrixise/rmm-tracker/cmd.GitBranch=${GIT_BRANCH} -X github.com/matrixise/rmm-tracker/cmd.GitCommit=${GIT_COMMIT} -X github.com/matrixise/rmm-tracker/cmd.BuildTime=${BUILD_TIME}" \
     -o rmm-tracker .
 
-FROM alpine:latest
+# Pinned to an explicit Alpine minor. `alpine:latest` silently moves the runtime
+# base from one build to the next, which wrecks reproducibility and makes
+# "which userland was in the image that broke?" unanswerable after the fact.
+# 3.24 is the current stable branch (released 2026-06-09, supported until
+# 2028-06-01) and is what `latest` resolves to today, so pinning it changes
+# nothing about the image contents -- it only freezes them.
+FROM alpine:3.24
 
-RUN apk --no-cache add ca-certificates curl
+# ca-certificates is required: the app makes HTTPS JSON-RPC calls to Gnosis
+# Chain and cannot verify TLS without a trust store.
+#
+# `curl` used to be installed here for exactly one consumer -- the `app`
+# healthcheck in docker-compose.yml. BusyBox already ships a `wget` applet that
+# covers that need, so the package was pure image size and CVE surface. The
+# healthcheck now uses `wget -q -O /dev/null`, which mirrors `curl -f`: BusyBox
+# wget exits non-zero on any HTTP >= 400. Note it is a real GET, which matters
+# because /health answers 405 to anything that is not a GET.
+RUN apk --no-cache add ca-certificates
+
+# Run unprivileged. No runtime code path writes to the filesystem and the health
+# server binds :8080, so root buys the process nothing but blast radius.
+# UID/GID 65532 is the same numeric id distroless uses for its `nonroot` user,
+# so host-side file ownership stays valid if this stage is ever moved there.
+RUN addgroup -g 65532 -S nonroot \
+    && adduser -u 65532 -S -G nonroot -H -h /nonexistent -s /sbin/nologin nonroot
 
 WORKDIR /app
 
+# Deliberately left owned by root and non-writable by the runtime user: the
+# process never needs to modify its own binary or its working directory.
 COPY --from=builder /app/rmm-tracker .
+
+USER 65532:65532
 
 ENTRYPOINT ["./rmm-tracker", "run"]
