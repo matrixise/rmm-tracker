@@ -29,10 +29,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract Go version from go.mod
+      # Kept in sync with docker-publish.yml's build-builder job: read from
+      # Dockerfile.builder's own FROM line, not go.mod's `go` directive,
+      # since those can legitimately diverge.
+      - name: Extract Go version from Dockerfile.builder
         id: goversion
         run: |
-          GO_VERSION=$(grep '^go ' go.mod | awk '{print $2}' | cut -d. -f1-2)
+          GO_VERSION=$(grep 'FROM' Dockerfile.builder | grep -oE 'golang:[0-9]+\.[0-9]+' | cut -d: -f2)
           echo "version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push builder image
