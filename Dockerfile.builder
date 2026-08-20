@@ -6,9 +6,9 @@
 # Rebuild this image whenever go.mod or go.sum change:
 #   task docker:builder:push
 #
-# Image: matrixise/rmm-tracker-builder:go1.26
+# Image: matrixise/rmm-tracker-builder:go1.27
 
-FROM --platform=linux/amd64 golang:1.26-alpine
+FROM --platform=linux/amd64 golang:1.27-alpine
 
 ENV GOTOOLCHAIN=auto
 

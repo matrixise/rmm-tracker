@@ -1,9 +1,11 @@
 name: Build and Publish Builder Image
 
 # Rebuild the builder base image (which pre-downloads all Go modules)
-# whenever go.mod or go.sum change, or on manual trigger.
+# whenever go.mod, go.sum, or the builder image definition itself change,
+# or on manual trigger.
 #
-# This keeps `go mod download` out of the critical path in docker-publish.yml.
+# This keeps `go mod download` out of the critical path in docker-publish.yml,
+# which now builds FROM this image (see Dockerfile).
 
 on:
   push:
@@ -11,6 +13,7 @@ on:
     paths:
       - go.mod
       - go.sum
+      - Dockerfile.builder
   workflow_dispatch:
 
 env:

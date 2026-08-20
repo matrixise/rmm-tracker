@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped the builder base image to `golang:1.27-alpine` (from `1.26`) and wired the main `Dockerfile`'s builder stage to build `FROM matrixise/rmm-tracker-builder`, so `go mod download` no longer runs on every image build
+
 ### Fixed
 
 - Published `linux/arm64` image no longer contains an amd64 binary: `ARG TARGETARCH=amd64` masked the value injected by buildx, pinning every platform to `GOARCH=amd64`. The final stage now verifies the binary's ELF architecture against the image architecture and fails the build on mismatch (#125)
