@@ -33,10 +33,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract Go version from go.mod
+      # Read from Dockerfile.builder's own FROM line, not go.mod's `go`
+      # directive: those are two different things (installed toolchain vs.
+      # minimum language version) and can legitimately diverge, which is
+      # exactly what broke this tag before -- go.mod said 1.26 while
+      # Dockerfile.builder had already moved to golang:1.27-alpine.
+      - name: Extract Go version from Dockerfile.builder
         id: goversion
         run: |
-          GO_VERSION=$(grep '^go ' go.mod | awk '{print $2}' | cut -d. -f1-2)
+          GO_VERSION=$(grep 'FROM' Dockerfile.builder | grep -oE 'golang:[0-9]+\.[0-9]+' | cut -d: -f2)
           echo "version=${GO_VERSION}" >> "$GITHUB_OUTPUT"
 
       # Runs on every publish (not just when go.mod/go.sum change) so the

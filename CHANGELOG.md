@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `docker-publish.yml`'s `build-builder` job tagged the pushed builder image from `go.mod`'s `go` directive (`1.26`) instead of `Dockerfile.builder`'s actual base image (`golang:1.27-alpine`), so it published `rmm-tracker-builder:go1.26` while the main `Dockerfile` pulled `rmm-tracker-builder:go1.27` — a tag that never existed. Both workflows now read the version straight from `Dockerfile.builder`'s `FROM` line, which can't drift from what's actually in the image
 - Published `linux/arm64` image no longer contains an amd64 binary: `ARG TARGETARCH=amd64` masked the value injected by buildx, pinning every platform to `GOARCH=amd64`. The final stage now verifies the binary's ELF architecture against the image architecture and fails the build on mismatch (#125)
 - Weekly period yield box on the wallet detail page showed the same start/end date instead of the true week range
 - Weekly report table now shows one row per consecutive week pair instead of a single row aggregated over the entire requested window
