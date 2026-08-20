@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Published `linux/arm64` image no longer contains an amd64 binary: `ARG TARGETARCH=amd64` masked the value injected by buildx, pinning every platform to `GOARCH=amd64`. The final stage now verifies the binary's ELF architecture against the image architecture and fails the build on mismatch (#125)
 - Weekly period yield box on the wallet detail page showed the same start/end date instead of the true week range
 - Weekly report table now shows one row per consecutive week pair instead of a single row aggregated over the entire requested window
+- Weekly report table rows spanned 14 days instead of 7: `week_start`/`week_end` incorrectly stretched from the previous bucket to the current bucket + 7 days instead of describing the current bucket's own week
 - Wallet detail page made responsive on mobile: address wraps with `break-all`, tables scroll horizontally, padding adapts to screen size (#52)
 
 ## [0.1.0] - 2026-03-01

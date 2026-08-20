@@ -207,9 +207,10 @@ func computeWeeklyReport(symbolOrder []string, bySymbol map[string][]weekEntry) 
 				}
 			}
 
-			// week_start = beginning of the previous (older) bucket in this pair.
-			// week_end   = end of the current (newer) bucket = current bucket + 7 days.
-			weekStart := entries[i+1].weekBucket
+			// week_start/week_end describe the current (newer) bucket's own
+			// 7-day window — mirrors dayEntry's single date, not a range
+			// spanning back to the previous bucket.
+			weekStart := entries[i].weekBucket
 			weekEnd := entries[i].weekBucket.Add(7 * 24 * time.Hour)
 
 			results = append(results, WeeklyReport{
