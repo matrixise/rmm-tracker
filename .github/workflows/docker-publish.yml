@@ -44,6 +44,37 @@ jobs:
             type=semver,pattern={{major}}
             type=sha
 
+      # `type=gha` caches image *layers* only. It does not carry the contents of
+      # the Dockerfile's `--mount=type=cache` mounts (`id=go-mod`, `id=go-build`)
+      # between runs, so `go build` -- whose layer is invalidated by `COPY . .` on
+      # every commit -- always recompiles from a cold Go build cache.
+      #
+      # Persisting those mounts needs reproducible-containers/buildkit-cache-dance
+      # to snapshot them into actions/cache. Measured 2026-08-20 and deliberately
+      # NOT adopted: it costs more than it saves at this project's size.
+      #
+      #   mount      on-disk   files    zstd
+      #   go-build     263 MB   2 878    59 MB
+      #   go-mod       393 MB  11 596   108 MB
+      #
+      #   dance overhead (local, buildx builder pinned to 4 CPUs)
+      #     both mounts       inject 25s + extract 51s = 76s, 167 MB cache
+      #     go-build only     inject 11s + extract 20s = 31s,  59 MB cache
+      #
+      # The dance is verified to work here -- auto-discovery reads this repo's
+      # Dockerfile and derives both mounts from their `id=`, and a build on the
+      # injected builder dropped from 70.6s to 1.7s locally. But the saving is
+      # capped by how long the compile actually takes on a runner, and this
+      # project compiles fast: `go build` is 28.1s in run 32404065239. Even the
+      # cheap variant (go-build only) spends ~31s of inject+extract, plus the
+      # actions/cache round trip, to save ~25s. Caching go-mod alone is the worst
+      # trade of all -- the largest mount (11.6k files) for the ~10s of module
+      # download it avoids.
+      #
+      # Extraction cannot be skipped in the common case: `skip-extraction` only
+      # fires on an exact cache-key hit, and the premise here is that the source
+      # changed. Revisit if the dependency tree grows enough to push `go build`
+      # past ~90s, which is where the inject+extract overhead starts to pay off.
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
