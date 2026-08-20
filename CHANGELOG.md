@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `.dockerignore` shrinking the Docker build context (414 kB → 312 kB) and keeping the builder stage's `COPY . .` layer from being invalidated by edits to docs, CI workflows, Taskfile or shell scripts. It also stops a developer's gitignored `config.toml`/`.env` from ever reaching the build context. Deliberately an explicit denylist: `main.go` embeds `CHANGELOG.md` and `internal/storage/migrate.go` embeds `migrations/*.sql`, so a blanket `*.md` rule needs the `!CHANGELOG.md` negation and `queries.sql` must be excluded by exact path rather than a `*.sql` glob — both constraints are documented in the file's header
+
 ### Changed
 
 - Published `matrixise/rmm-tracker` images are now `linux/amd64` only, matching the only architecture actually deployed to production. Dropped the QEMU setup step and the `linux/arm64` platform target from `docker-publish.yml` accordingly
