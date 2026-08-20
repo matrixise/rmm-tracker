@@ -1,0 +1,98 @@
+# .dockerignore -- shrinks the build context sent to the daemon and keeps the
+# builder-stage `COPY . .` layer from being invalidated by edits to files that
+# have nothing to do with compiling the binary.
+#
+# ############################################################################
+# READ THIS BEFORE "TIDYING UP" THIS FILE -- two go:embed landmines
+# ############################################################################
+#
+#   1. main.go                    contains //go:embed CHANGELOG.md
+#   2. internal/storage/migrate.go contains //go:embed migrations/*.sql
+#
+# Consequences:
+#   * NEVER add a blanket `*.md` / `**/*.md` rule without the
+#     `!CHANGELOG.md` negation below -- the build dies with
+#     `pattern CHANGELOG.md: no matching files found`.
+#   * NEVER exclude `*.sql` or `**/*.sql`. The migrations are embedded into
+#     the binary. `queries.sql` (a docs-only sample-query file) is therefore
+#     excluded by its exact path, never by a glob.
+#
+# This is an explicit denylist rather than an allowlist precisely because of
+# those two embeds: a `*` + `!keep-me` allowlist is far easier to get subtly
+# wrong here.
+# ############################################################################
+
+# --- VCS / agent metadata --------------------------------------------------
+.git
+.gitignore
+.gitattributes
+.github
+.claude
+
+# --- Editor & OS junk ------------------------------------------------------
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Secrets & local configuration -----------------------------------------
+# config.toml / .env are gitignored but may exist on a developer machine and
+# would otherwise be baked into the build context with real credentials.
+# The *.example templates are excluded too: they are documentation, and
+# nothing in the Go build reads them.
+config.toml
+config.toml.example
+.env
+*.env
+.env.example
+.envrc
+
+# --- Documentation ---------------------------------------------------------
+# `**/*.md` also catches the per-package CLAUDE.md files under cmd/ and
+# internal/. The negation right after it is MANDATORY -- see the header.
+docs
+**/*.md
+!CHANGELOG.md
+
+# Sample queries for humans. Exact path on purpose: a `*.sql` glob would
+# strip internal/storage/migrations/*.sql and break the embed.
+queries.sql
+
+# --- Dev tooling (not compiled) --------------------------------------------
+Taskfile.yml
+Taskfile.local.yml
+Makefile
+mise.toml
+.pre-commit-config.yaml
+.golangci.yml
+.yamllint.yml
+.markdownlint.yml
+.markdownlintignore
+.codespellrc
+.air.toml
+.actrc
+
+# --- Scripts ---------------------------------------------------------------
+*.sh
+
+# --- Build outputs & test artifacts ----------------------------------------
+rmm-tracker
+tmp
+.task
+*.test
+*.out
+*.exe
+*.dll
+*.so
+*.dylib
+*.dump.sql
+
+# --- Docker's own files ----------------------------------------------------
+Dockerfile
+Dockerfile.*
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
