@@ -113,10 +113,11 @@ RPC_URL="..." WALLETS="..." LOG_LEVEL=debug ./rmm-tracker
 
 ## ✅ Point 16 - Multi-stage Linting dans CI
 
-**Implémenté** : Linting optionnel avec golangci-lint dans Dockerfile.
+**Implémenté** : golangci-lint en CI et en pre-commit.
 
 ### Changements
-- Linting optionnel via build arg `ENABLE_LINT`
+- Linting en CI via `golangci/golangci-lint-action` (`.github/workflows/test.yml`)
+- Linting local via le hook `golangci-lint` de `.pre-commit-config.yaml` (lancé par `prek`)
 - Configuration `.golangci.yml` avec linters essentiels :
   - `errcheck` : Erreurs non traitées
   - `gosimple` : Simplifications
@@ -124,28 +125,31 @@ RPC_URL="..." WALLETS="..." LOG_LEVEL=debug ./rmm-tracker
   - `staticcheck` : Analyse avancée
   - `gosec` : Sécurité
   - Et plus...
-- Installation de golangci-lint depuis les sources (compatible Go 1.25)
+- Version de golangci-lint épinglée à `v2.10.1`, identique en CI et en pre-commit
+
+Le Dockerfile ne lance plus de linting : il ne fait que compiler. Le lint est
+la responsabilité de la CI et des hooks pre-commit, qui utilisent la même
+version épinglée.
 
 ### Utilisation
 
-#### Build sans linting (défaut, rapide)
+#### Build de l'image (compilation uniquement)
 ```bash
 docker compose build app
 ```
 
-#### Build avec linting (CI/production)
-```bash
-docker build --build-arg ENABLE_LINT=true -t rmm-tracker-app .
-```
-
 #### Linting en local
 ```bash
-# Installer golangci-lint
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+# Tous les hooks (dont golangci-lint), sur tous les fichiers
+prek run -a
 
-# Lancer le linting
-golangci-lint run --timeout=5m
+# Uniquement golangci-lint
+prek run golangci-lint
 ```
+
+#### Linting en CI
+Automatique sur chaque push/PR touchant du code Go, via le job `lint` de
+`.github/workflows/test.yml`.
 
 ### Configuration
 Voir `.golangci.yml` pour personnaliser les règles.
@@ -188,8 +192,8 @@ WALLETS="0xinvalid" docker compose up app
 
 ### Test linting
 ```bash
-# Build avec linting activé
-docker build --build-arg ENABLE_LINT=true -t rmm-tracker-app .
+# Mêmes linters (et même version) qu'en CI
+prek run golangci-lint
 ```
 
 ---

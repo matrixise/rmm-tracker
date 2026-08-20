@@ -13,22 +13,14 @@
 
 FROM matrixise/rmm-tracker-builder:go1.27 AS builder
 
-ARG ENABLE_LINT=false
-
-ENV GOTOOLCHAIN=auto
+# 'local' pins the build to the base image's Go toolchain: no silent mid-build
+# download of a different version. Bumping go.mod past that version must now be
+# matched by bumping the base image -- the resulting build failure is intended.
+ENV GOTOOLCHAIN=local
 
 WORKDIR /app
 
 COPY . .
-
-# Optional linting (enabled with --build-arg ENABLE_LINT=true)
-RUN if [ "$ENABLE_LINT" = "true" ]; then \
-        apk add --no-cache git && \
-        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
-        /go/bin/golangci-lint run --timeout=5m; \
-    else \
-        echo "Linting disabled (use --build-arg ENABLE_LINT=true to enable)"; \
-    fi
 
 # Build args for version info
 ARG VERSION=dev
@@ -40,7 +32,8 @@ ARG BUILD_TIME=unknown
 RUN --mount=type=cache,target=/root/.cache/go-build,id=go-build \
     set -eu; \
     CGO_ENABLED=0 go build \
-    -ldflags "-X github.com/matrixise/rmm-tracker/cmd.Version=${VERSION} -X github.com/matrixise/rmm-tracker/cmd.GitBranch=${GIT_BRANCH} -X github.com/matrixise/rmm-tracker/cmd.GitCommit=${GIT_COMMIT} -X github.com/matrixise/rmm-tracker/cmd.BuildTime=${BUILD_TIME}" \
+    -trimpath \
+    -ldflags "-s -w -X github.com/matrixise/rmm-tracker/cmd.Version=${VERSION} -X github.com/matrixise/rmm-tracker/cmd.GitBranch=${GIT_BRANCH} -X github.com/matrixise/rmm-tracker/cmd.GitCommit=${GIT_COMMIT} -X github.com/matrixise/rmm-tracker/cmd.BuildTime=${BUILD_TIME}" \
     -o rmm-tracker .
 
 FROM alpine:latest
