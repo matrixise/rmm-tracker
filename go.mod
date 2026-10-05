@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/a-h/templ v0.3.1020
-	github.com/ethereum/go-ethereum v1.17.6
+	github.com/ethereum/go-ethereum v1.17.7
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-co-op/gocron/v2 v2.22.0
 	github.com/go-playground/validator/v10 v10.30.5
