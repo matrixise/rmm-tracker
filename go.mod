@@ -3,7 +3,7 @@ module github.com/matrixise/rmm-tracker
 go 1.26.0
 
 require (
-	github.com/a-h/templ v0.3.1070
+	github.com/a-h/templ v0.3.1100
 	github.com/ethereum/go-ethereum v1.17.9
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-co-op/gocron/v2 v2.22.0
