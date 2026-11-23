@@ -6,7 +6,7 @@ require (
 	github.com/a-h/templ v0.3.1118
 	github.com/ethereum/go-ethereum v1.17.10
 	github.com/go-chi/chi/v5 v5.5.0
-	github.com/go-co-op/gocron/v2 v2.23.1
+	github.com/go-co-op/gocron/v2 v2.23.2
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
 	github.com/jackc/pgx/v5 v5.11.0
